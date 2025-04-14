@@ -28,13 +28,19 @@ def preprocess(example):
         "label": example["label"],  # Original label
     }
 
+# Get the directory this script is in (i.e., the "data" folder)
+current_dir = os.path.dirname(os.path.abspath(__file__))
+
+# Build path to "mmsd_processed" inside the same folder
+processed_data_dir = os.path.join(current_dir, "mmsd_processed")
+
 # Check if the processed dataset already exists to avoid reprocessing
-if not os.path.exists("mmsd_processed"):
+if not os.path.exists(processed_data_dir):
     # Apply preprocessing to the entire dataset
     dataset = dataset.map(preprocess, batched=True, num_proc=4)  # Adjust `num_proc` as needed
     
     # Save the processed dataset to disk
-    dataset.save_to_disk("mmsd_processed")
+    dataset.save_to_disk(processed_data_dir)
 else:
     # Load the processed dataset from disk if it exists
-    dataset = load_from_disk("mmsd_processed")
+    dataset = load_from_disk(processed_data_dir)

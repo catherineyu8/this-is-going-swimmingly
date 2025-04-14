@@ -6,7 +6,7 @@ from tqdm import tqdm
 
 def main():
     # Load the processed dataset
-    dataset = load_from_disk("../data/mmsd_processed")
+    dataset = load_from_disk("data/mmsd_processed")
 
     print("loaded data from disk")
 
@@ -58,6 +58,9 @@ def main():
         #         "attention_mask": tf.Tensor,    # shape: (batch_size, sequence_length)
         #         "pixel_values": tf.Tensor       # shape: (batch_size, 3, 224, 224)
         #     }
+
+        # TODO: put data in dataloader?
+
         model(inputs)
 
 
