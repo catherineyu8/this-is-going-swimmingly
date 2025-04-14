@@ -1,7 +1,7 @@
 import tensorflow as tf
 import tensorflow.keras.layers as layers
-from transformers import TFCLIPModel, BertConfig
-from transformers.models.bert.modeling_bert import BertLayer
+from transformers import TFCLIPModel, BertConfig, TFBertModel, BertTokenizer
+# from transformers.models.bert.modeling_bert import BertLayer
 
 
 class RackleMuffin(tf.keras.Model):
@@ -21,7 +21,9 @@ class RackleMuffin(tf.keras.Model):
 
         # define clip model and bert model for image and text processing
         self.clip_model = TFCLIPModel.from_pretrained("openai/clip-vit-base-patch32")
-        # self.bert_config = BertConfig.from_pretrained("./MMSD2.0-main/bert-base-uncased")
+        # self.bert_config = BertConfig.from_pretrained("bert-base-uncased")
+        self.bert_model = TFBertModel.from_pretrained("bert-base-uncased")
+        # self.resnet_backbone = # join resnet with position encoding
 
         # text and image linear layers used for initial feature extraction
         self.text_linear = tf.keras.Sequential([
@@ -48,10 +50,9 @@ class RackleMuffin(tf.keras.Model):
         """
         clip_output = self.clip_model(**inputs, output_attentions=True)
 
-        # extract corresponding features
-        text_features = clip_output['text_model_output']['last_hidden_state']  # 128，77，512
-        image_features = clip_output['vision_model_output']['last_hidden_state']  # 128，50，768
-
+        # extract text and image features from CLIP and reshape to the hidden size
+        # text_features = clip_output['text_model_output']['last_hidden_state']  # 128，77，512
+        # image_features = clip_output['vision_model_output']['last_hidden_state']  # 128，50，768
         text_feature = clip_output['text_model_output']['pooler_output'] # 64，512
         image_feature = clip_output['vision_model_output']['pooler_output'] # 64，768
         text_feature = self.text_linear(text_feature)  # 64，768
