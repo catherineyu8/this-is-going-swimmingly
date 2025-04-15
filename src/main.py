@@ -1,9 +1,9 @@
 from datasets import load_from_disk
 import tensorflow as tf
 from tqdm import tqdm
-from transformers import CLIPProcessor
 from model import RackleMuffin
 import numpy as np
+from my_dataset import MyTFDataset
 
 # def custom_collate_fn(batch):
 #     # Stack uniform tensors
@@ -31,16 +31,27 @@ import numpy as np
 
 def main():
     # Load the processed dataset
-    dataset = load_from_disk("data/mmsd_processed")
+    # dataset = load_from_disk("data/mmsd_processed")
 
-    print("Loaded data from disk")
+    # print("Loaded data from disk")
 
     # Convert training split to tf.data.Dataset
-    train_dataset = dataset["train"].to_tf_dataset(
-        columns=["input_ids", "attention_mask", "pixel_values", "label", "text_list", "image_list", "label_list", "samples"],
-        label_cols="label",
-        shuffle=True,
-        batch_size=32,
+    # train_dataset = dataset["train"].to_tf_dataset(
+    #     columns=["input_ids", "attention_mask", "pixel_values", "label", "text_list", "image_list", "label_list", "samples"],
+    #     label_cols="label",
+    #     shuffle=True,
+    #     batch_size=32,
+    # )
+    train_dataset = MyTFDataset.load_or_process(
+        mode="train",
+        text_name="mmsd-clean",
+        limit=None
+    )
+    train_dataset = (
+        train_dataset
+        .shuffle(500)
+        .batch(32)
+        .prefetch(tf.data.AUTOTUNE)
     )
 
     print("created training dataset")
@@ -70,18 +81,19 @@ def main():
     # Create the model
     model = RackleMuffin()
 
+
     # Training loop
     for batch in tqdm(train_dataset, desc="Training"):
-        inputs = {
-            "input_ids": batch["input_ids"],
-            "attention_matrix": batch["attention_matrx"],
-            "pixel_values": batch["pixel_values"]
-        }
+        # inputs = {
+        #     "input_ids": batch["input_ids"],
+        #     "attention_matrix": batch["attention_matrx"],
+        #     "pixel_values": batch["pixel_values"]
+        # }
 
-        text_list = batch["text_list"]
-        samples = batch["samples"]
+        # text_list = batch["text_list"]
+        # samples = batch["samples"]
 
-        model(inputs)
+        model(batch)
 
         # You can also use the additional fields (text_list, image_list, etc.) for logging, debugging, etc.
         # For example, printing out the first text sample for debugging:
@@ -102,7 +114,7 @@ def main():
         # print(f"Loss: {loss.numpy()}")
 
     # Optionally save the model after every epoch
-    model.save_pretrained("./saved_model")
+    # model.save_pretrained("./saved_model")
 
 
 if __name__ == '__main__':

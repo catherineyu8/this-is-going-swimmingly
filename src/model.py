@@ -1,6 +1,8 @@
 import tensorflow as tf
 import tensorflow.keras.layers as layers
 from transformers import TFCLIPModel, BertConfig, TFBertModel, BertTokenizer
+from transformers import CLIPProcessor
+
 # from transformers.models.bert.modeling_bert import BertLayer
 
 
@@ -39,7 +41,7 @@ class RackleMuffin(tf.keras.Model):
         
         return
     
-    def call(self, inputs):
+    def call(self, batch):
         """
         CLIP Model Expectation
             inputs = {
@@ -48,6 +50,11 @@ class RackleMuffin(tf.keras.Model):
                 "pixel_values": tf.Tensor       # shape: (batch_size, 3, 224, 224)
             }
         """
+        text_list, image_path_list, label_list, id_list = batch
+
+        processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
+        inputs = processor(text=text_list, images=image_path_list, padding='max_length', truncation=True, max_length=77, return_tensors="tf")
+
         clip_output = self.clip_model(**inputs, output_attentions=True)
 
         # extract text and image features from CLIP and reshape to the hidden size
