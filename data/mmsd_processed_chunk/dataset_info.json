@@ -1,0 +1,151 @@
+{
+  "builder_name": "parquet",
+  "citation": "",
+  "config_name": "mmsd-v2",
+  "dataset_name": "mmsd2.0",
+  "dataset_size": 2701736319,
+  "description": "",
+  "download_checksums": {
+    "hf://datasets/coderchen01/MMSD2.0@5b39e5b844accf2331d1738a3d91d4cb59005a50/mmsd-v2/train-00000-of-00004.parquet": {
+      "num_bytes": 518465777,
+      "checksum": null
+    },
+    "hf://datasets/coderchen01/MMSD2.0@5b39e5b844accf2331d1738a3d91d4cb59005a50/mmsd-v2/train-00001-of-00004.parquet": {
+      "num_bytes": 561840538,
+      "checksum": null
+    },
+    "hf://datasets/coderchen01/MMSD2.0@5b39e5b844accf2331d1738a3d91d4cb59005a50/mmsd-v2/train-00002-of-00004.parquet": {
+      "num_bytes": 590932291,
+      "checksum": null
+    },
+    "hf://datasets/coderchen01/MMSD2.0@5b39e5b844accf2331d1738a3d91d4cb59005a50/mmsd-v2/train-00003-of-00004.parquet": {
+      "num_bytes": 487408747,
+      "checksum": null
+    },
+    "hf://datasets/coderchen01/MMSD2.0@5b39e5b844accf2331d1738a3d91d4cb59005a50/mmsd-v2/validation-00000-of-00001.parquet": {
+      "num_bytes": 268200653,
+      "checksum": null
+    },
+    "hf://datasets/coderchen01/MMSD2.0@5b39e5b844accf2331d1738a3d91d4cb59005a50/mmsd-v2/test-00000-of-00001.parquet": {
+      "num_bytes": 263419617,
+      "checksum": null
+    }
+  },
+  "download_size": 2690267623,
+  "features": {
+    "image": {
+      "_type": "Image"
+    },
+    "text": {
+      "dtype": "string",
+      "_type": "Value"
+    },
+    "label": {
+      "dtype": "int64",
+      "_type": "Value"
+    },
+    "id": {
+      "dtype": "string",
+      "_type": "Value"
+    },
+    "input_ids": {
+      "feature": {
+        "feature": {
+          "dtype": "int32",
+          "_type": "Value"
+        },
+        "_type": "Sequence"
+      },
+      "_type": "Sequence"
+    },
+    "attention_mask": {
+      "feature": {
+        "feature": {
+          "dtype": "int8",
+          "_type": "Value"
+        },
+        "_type": "Sequence"
+      },
+      "_type": "Sequence"
+    },
+    "pixel_values": {
+      "feature": {
+        "feature": {
+          "feature": {
+            "feature": {
+              "dtype": "float32",
+              "_type": "Value"
+            },
+            "_type": "Sequence"
+          },
+          "_type": "Sequence"
+        },
+        "_type": "Sequence"
+      },
+      "_type": "Sequence"
+    },
+    "text_list": {
+      "dtype": "string",
+      "_type": "Value"
+    },
+    "image_list": {
+      "_type": "Image"
+    },
+    "label_list": {
+      "dtype": "int64",
+      "_type": "Value"
+    },
+    "samples": {
+      "feature": {
+        "feature": {
+          "feature": {
+            "feature": {
+              "dtype": "float32",
+              "_type": "Value"
+            },
+            "_type": "Sequence"
+          },
+          "_type": "Sequence"
+        },
+        "_type": "Sequence"
+      },
+      "_type": "Sequence"
+    }
+  },
+  "homepage": "",
+  "license": "",
+  "size_in_bytes": 5392003942,
+  "splits": {
+    "train": {
+      "name": "train",
+      "num_bytes": 2168930440,
+      "num_examples": 19816,
+      "shard_lengths": [
+        4800,
+        4454,
+        4154,
+        4854,
+        1554
+      ],
+      "dataset_name": "mmsd2.0"
+    },
+    "validation": {
+      "name": "validation",
+      "num_bytes": 268765352,
+      "num_examples": 2410,
+      "dataset_name": "mmsd2.0"
+    },
+    "test": {
+      "name": "test",
+      "num_bytes": 264040527,
+      "num_examples": 2409,
+      "dataset_name": "mmsd2.0"
+    }
+  },
+  "version": {
+    "version_str": "0.0.0",
+    "major": 0,
+    "minor": 0,
+    "patch": 0
+  }
+}
