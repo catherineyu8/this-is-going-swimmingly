@@ -1,82 +1,109 @@
 from datasets import load_from_disk
 import tensorflow as tf
+from tqdm import tqdm
 from transformers import CLIPProcessor
 from model import RackleMuffin
-from tqdm import tqdm
+import numpy as np
+
+# def custom_collate_fn(batch):
+#     # Stack uniform tensors
+#     pixel_values = np.stack([example["pixel_values"] for example in batch])
+#     input_ids = np.stack([example["input_ids"] for example in batch])
+#     attention_mask = np.stack([example["attention_mask"] for example in batch])
+#     labels = np.stack([example["label"] for example in batch])
+
+#     # Keep these as lists (not stacking)
+#     text_list = [example["text_list"] for example in batch]
+#     image_list = [example["image_list"] for example in batch]
+#     label_list = [example["label_list"] for example in batch]
+#     samples = [example["samples"] for example in batch]
+
+#     return {
+#         "pixel_values": pixel_values,
+#         "input_ids": input_ids,
+#         "attention_mask": attention_mask,
+#         "label": labels,
+#         "text_list": text_list,
+#         "image_list": image_list,
+#         "label_list": label_list,
+#         "samples": samples
+    # }
 
 def main():
     # Load the processed dataset
     dataset = load_from_disk("data/mmsd_processed")
 
-    print("loaded data from disk")
+    print("Loaded data from disk")
 
-    # convert training split to tf.data.Dataset
+    # Convert training split to tf.data.Dataset
     train_dataset = dataset["train"].to_tf_dataset(
-        columns=["pixel_values", "input_ids", "attention_mask"],
+        columns=["input_ids", "attention_mask", "pixel_values", "label", "text_list", "image_list", "label_list", "samples"],
         label_cols="label",
         shuffle=True,
         batch_size=32,
-        collate_fn=None  # You can define one if needed
     )
 
-    # convert validation split to tf.data.Dataset
-    val_dataset = dataset["validation"].to_tf_dataset(
-        columns=["pixel_values", "input_ids", "attention_mask"],
-        label_cols="label",
-        shuffle=False,
-        batch_size=32
-    )
+    print("created training dataset")
 
-    # convert testing split to tf.data.dataset
-    test_dataset = dataset["test"].to_tf_dataset(
-        columns=["pixel_values", "input_ids", "attention_mask"],
-        label_cols="label",
-        shuffle=False,
-        batch_size=32
-    )
-    
-    # create processor (only used in train, but I think we should have already done this in load_data
-    # processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
+    # Convert validation split to tf.data.Dataset
+    # val_dataset = dataset["validation"].to_tf_dataset(
+    #     columns=["input_ids", "attention_mask", "pixel_values", "label", "text_list", "image_list", "label_list", "samples"],
+    #     label_cols="label",
+    #     shuffle=False,
+    #     batch_size=32,
+    #     collate_fn=tf_collate_fn  # You can define one if needed
+    # )
 
-    # create model
+    # print("created val dataset")
+
+    # # Convert testing split to tf.data.Dataset
+    # test_dataset = dataset["test"].to_tf_dataset(
+    #     columns=["input_ids", "attention_mask", "pixel_values", "label", "text_list", "image_list", "label_list", "samples"],
+    #     label_cols="label",
+    #     shuffle=False,
+    #     batch_size=32,
+    #     collate_fn=tf_collate_fn  # You can define one if needed
+    # )
+
+    # print("created test dataset")
+
+    # Create the model
     model = RackleMuffin()
 
-    # pass datasets into train()
-   # train(args, model, device, train_data, dev_data, test_data, processor)
-
+    # Training loop
     for batch in tqdm(train_dataset, desc="Training"):
-        # RCLMuFN unpacking
-        # text_list, image_list, label_list, id_list, samples = batch
-        # inputs = processor(text=text_list.numpy(), images=image_list.numpy(), padding='max_length',
-        #            truncation=True, max_length=77, return_tensors="tf")
-        inputs, labels = batch
+        inputs = {
+            "input_ids": batch["input_ids"],
+            "attention_matrix": batch["attention_matrx"],
+            "pixel_values": batch["pixel_values"]
+        }
 
-        # inputs is immediately unpacked by CLIPModel and processed, needs to be in this expected format:
-        # this should be exactly what we get from training_data!
-        #     inputs = {
-        #         "input_ids": tf.Tensor,         # shape: (batch_size, sequence_length)
-        #         "attention_mask": tf.Tensor,    # shape: (batch_size, sequence_length)
-        #         "pixel_values": tf.Tensor       # shape: (batch_size, 3, 224, 224)
-        #     }
-
-        # TODO: put data in dataloader?
+        text_list = batch["text_list"]
+        samples = batch["samples"]
 
         model(inputs)
 
+        # You can also use the additional fields (text_list, image_list, etc.) for logging, debugging, etc.
+        # For example, printing out the first text sample for debugging:
+        print(f"First text in the batch: {text_list[0]}")
+        
+        # If you need to track any additional metrics or store extra data, you can do that here.
+        # For example, tracking losses or printing image paths.
+        
+        # Forward pass for the model and loss calculation (if applicable)
+        # outputs = model(inputs)  # If you need the model outputs for loss calculation
+        
+        # Calculate gradients and apply them if you're doing custom optimization steps
+        # loss = outputs.loss  # This depends on your model's output format
+        # grads = tape.gradient(loss, model.trainable_variables)
+        # optimizer.apply_gradients(zip(grads, model.trainable_variables))
 
+        # Optionally print loss for tracking
+        # print(f"Loss: {loss.numpy()}")
 
-        # with tf.GradientTape() as tape:
-        #     loss, score = model(inputs, batch=batch, labels=labels, training=True)
+    # Optionally save the model after every epoch
+    model.save_pretrained("./saved_model")
 
-        # gradients = tape.gradient(loss, model.trainable_variables)
-        # optimizer.apply_gradients(zip(gradients, model.trainable_variables))
-
-        # total_loss += loss.numpy()
-        # step_count += 1
-
-        #print(f"Epoch {epoch+1} loss: {total_loss / step_count:.4f}")
-
-    return
 
 if __name__ == '__main__':
     main()
