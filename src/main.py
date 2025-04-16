@@ -1,82 +1,78 @@
 from datasets import load_from_disk
 import tensorflow as tf
+from tqdm import tqdm
 from transformers import CLIPProcessor
 from model import RackleMuffin
-from tqdm import tqdm
+import numpy as np
 
 def main():
     # Load the processed dataset
     dataset = load_from_disk("data/mmsd_processed")
 
-    print("loaded data from disk")
+    print("loaded small data chunk from disk")
 
-    # convert training split to tf.data.Dataset
+    # two_clip_batches = dataset.to_tf_dataset(
+    #     columns=["input_ids", "attention_mask", "pixel_values"],
+    #     label_cols="label",
+    #     shuffle=True,
+    #     batch_size=32,
+    # )
+
     train_dataset = dataset["train"].to_tf_dataset(
-        columns=["pixel_values", "input_ids", "attention_mask"],
+        columns=["input_ids", "attention_mask", "pixel_values"],
         label_cols="label",
         shuffle=True,
         batch_size=32,
-        collate_fn=None  # You can define one if needed
     )
+    text_list_train = dataset["train"]["text_list"]
 
-    # convert validation split to tf.data.Dataset
-    val_dataset = dataset["validation"].to_tf_dataset(
-        columns=["pixel_values", "input_ids", "attention_mask"],
-        label_cols="label",
-        shuffle=False,
-        batch_size=32
-    )
+    # print("created training dataset")
 
-    # convert testing split to tf.data.dataset
-    test_dataset = dataset["test"].to_tf_dataset(
-        columns=["pixel_values", "input_ids", "attention_mask"],
-        label_cols="label",
-        shuffle=False,
-        batch_size=32
-    )
-    
-    # create processor (only used in train, but I think we should have already done this in load_data
-    # processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
+    # Convert validation split to tf.data.Dataset
+    # val_dataset = dataset["validation"].to_tf_dataset(
+    #     columns=["input_ids", "attention_mask", "pixel_values", "label", "text_list", "image_list", "label_list", "samples"],
+    #     label_cols="label",
+    #     shuffle=False,
+    #     batch_size=32,
+    #     collate_fn=tf_collate_fn  # You can define one if needed
+    # )
 
-    # create model
+    # print("created val dataset")
+
+    # # Convert testing split to tf.data.Dataset
+    # test_dataset = dataset["test"].to_tf_dataset(
+    #     columns=["input_ids", "attention_mask", "pixel_values", "label", "text_list", "image_list", "label_list", "samples"],
+    #     label_cols="label",
+    #     shuffle=False,
+    #     batch_size=32,
+    #     collate_fn=tf_collate_fn  # You can define one if needed
+    # )
+
+    # print("created test dataset")
+
+    # Create the model
     model = RackleMuffin()
 
-    # pass datasets into train()
-   # train(args, model, device, train_data, dev_data, test_data, processor)
+    # breaking:
+    # trying to take a batch (32) of examples
+    # then, it tries to stack each dimension together (all text, all images)
+    # it breaks because the text is different shapes
+    # Group into batches of 32
+    batch_size = 32
+    text_list_batches = [text_list_train[i:i + batch_size] for i in range(0, len(text_list_train), batch_size)]
 
-    for batch in tqdm(train_dataset, desc="Training"):
-        # RCLMuFN unpacking
-        # text_list, image_list, label_list, id_list, samples = batch
-        # inputs = processor(text=text_list.numpy(), images=image_list.numpy(), padding='max_length',
-        #            truncation=True, max_length=77, return_tensors="tf")
+    for (batch, text_batch) in tqdm(zip(train_dataset, text_list_batches), desc="Training"):
         inputs, labels = batch
+        # supposedly should be able to get text_batch now?
 
-        # inputs is immediately unpacked by CLIPModel and processed, needs to be in this expected format:
-        # this should be exactly what we get from training_data!
-        #     inputs = {
-        #         "input_ids": tf.Tensor,         # shape: (batch_size, sequence_length)
-        #         "attention_mask": tf.Tensor,    # shape: (batch_size, sequence_length)
-        #         "pixel_values": tf.Tensor       # shape: (batch_size, 3, 224, 224)
-        #     }
-
-        # TODO: put data in dataloader?
+        print("first input_ids:", inputs["input_ids"][0])
+        print("first text in batch:", text_batch[0])
 
         model(inputs)
+        
+    # Optionally save the model after every epoch
+    model.save_pretrained("./saved_model")
 
-
-
-        # with tf.GradientTape() as tape:
-        #     loss, score = model(inputs, batch=batch, labels=labels, training=True)
-
-        # gradients = tape.gradient(loss, model.trainable_variables)
-        # optimizer.apply_gradients(zip(gradients, model.trainable_variables))
-
-        # total_loss += loss.numpy()
-        # step_count += 1
-
-        #print(f"Epoch {epoch+1} loss: {total_loss / step_count:.4f}")
-
-    return
 
 if __name__ == '__main__':
     main()
