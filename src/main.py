@@ -7,24 +7,24 @@ import numpy as np
 
 def main():
     # Load the processed dataset
-    dataset = load_from_disk("../data/mmsd_processed_chunk")
+    dataset = load_from_disk("../data/mmsd_processed")
 
     print("loaded small data chunk from disk")
 
-
-    two_batches = dataset.to_tf_dataset(
-        columns=["input_ids", "attention_mask", "pixel_values", "label", "text_list", "image_list", "label_list", "samples"],
-        label_cols="label",
-        shuffle=True,
-        batch_size=1,
-    )
-
-    # train_dataset = dataset["train"].to_tf_dataset(
-    #     columns=["input_ids", "attention_mask", "pixel_values", "label", "text_list", "image_list", "label_list", "samples"],
+    # two_clip_batches = dataset.to_tf_dataset(
+    #     columns=["input_ids", "attention_mask", "pixel_values"],
     #     label_cols="label",
     #     shuffle=True,
     #     batch_size=32,
     # )
+
+    train_dataset = dataset["train"].to_tf_dataset(
+        columns=["input_ids", "attention_mask", "pixel_values"],
+        label_cols="label",
+        shuffle=True,
+        batch_size=32,
+    )
+    text_list_train = dataset["train"]["text_list"]
 
     # print("created training dataset")
 
@@ -57,22 +57,19 @@ def main():
     # trying to take a batch (32) of examples
     # then, it tries to stack each dimension together (all text, all images)
     # it breaks because the text is different shapes
-    for batch in tqdm(two_batches, desc="Training"):
-        inputs = {
-            "input_ids": batch["input_ids"],
-            "attention_matrix": batch["attention_matrx"],
-            "pixel_values": batch["pixel_values"]
-        }
+    # Group into batches of 32
+    batch_size = 32
+    text_list_batches = [text_list_train[i:i + batch_size] for i in range(0, len(text_list_train), batch_size)]
 
-        text_list = batch["text_list"]
-        samples = batch["samples"]
+    for (batch, text_batch) in tqdm(zip(train_dataset, text_list_batches), desc="Training"):
+        inputs, labels = batch
+        # supposedly should be able to get text_batch now?
+
+        print("first input_ids:", inputs["input_ids"][0])
+        print("first text in batch:", text_batch[0])
 
         model(inputs)
-
-        # print for debugging
-        print(f"First text in the batch: {text_list[0]}")
         
-
     # Optionally save the model after every epoch
     model.save_pretrained("./saved_model")
 
