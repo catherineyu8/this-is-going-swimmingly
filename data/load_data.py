@@ -37,6 +37,7 @@ def preprocess(example):
         "samples": inputs["pixel_values"],  # already preprocessed image
     }
 
+<<<<<<< HEAD
 
 # Get the directory this script is in (i.e., the "data" folder)
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -65,3 +66,4 @@ if not os.path.exists(processed_data_dir):
 else:
     # load processed data if it exists
     dataset = load_from_disk(processed_data_dir)
+

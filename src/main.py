@@ -7,7 +7,7 @@ import numpy as np
 
 def main():
     # Load the processed dataset
-    dataset = load_from_disk("../data/mmsd_processed")
+    dataset = load_from_disk("data/mmsd_processed")
 
     print("loaded small data chunk from disk")
 
