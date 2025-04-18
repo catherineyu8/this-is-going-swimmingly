@@ -19,6 +19,7 @@ class RackleMuffin(tf.keras.Model):
         self.clip_learning_rate = 1e-6
         self.max_len_clip_text = 77
         self.dropout_rate = 0.1
+        self.dim_feedforward = 2048
 
         # CLIP model both image and text processing
         self.clip_model = TFCLIPModel.from_pretrained("openai/clip-vit-base-patch32")
@@ -52,9 +53,8 @@ class RackleMuffin(tf.keras.Model):
         ])
         
         # SFIM (SHALLOW FEATURE INTERACTION MODULE)
-        # self.sfim_imgtxt_cross = layers.MultiHeadAttention(num_heads=8, key_dim=64)  # d_model = 64 * 8 = 512
-        # TODO: implement paper's TransformerCrossLayer starting with nn.MultiHeadAttention
-        
+        self.sfim_imgtext_cross = CrossAtten(self.embedding_size, self.num_attn_heads, self.dim_feedforward, self.dropout_rate)
+
         return
     
     def call(self, inputs, text_data):
@@ -93,3 +93,52 @@ class RackleMuffin(tf.keras.Model):
         bert_txt_features = self.bert_linear(bert_pooler_output) # (32, 768)
 
         # SFIM (SHALLOW FEATURE INTERACTION MODULE)
+        # expand dims to be able to do cross-atten
+        resnet_img_features = tf.expand_dims(resnet_img_features, axis=1)  # (32, 1, 768)
+        bert_txt_features = tf.expand_dims(bert_txt_features, axis=1)    # (32, 1, 768)
+
+        sfim_img = self.sfim_imgtext_cross(target=resnet_img_features, memory=bert_txt_features) # (32, 1, 768)
+        sfim_img = tf.squeeze(sfim_img, axis=1)  # (32, 768)
+
+        sfim_txt = self.sfim_imgtext_cross(target=bert_txt_features, memory=resnet_img_features) # (32, 1, 768)
+        sfim_txt = tf.squeeze(sfim_txt, axis=1)  # (32, 768)
+
+        # RCLM (RELATIONAL CONTEXT LEARNING MODULE)
+
+# cross attention custom class (called TransformerCrossLayer in paper)
+class CrossAtten(layers.Layer):
+    # num_heads=8, d_model = embedding_size=768, dropout=.1
+    # dim_feedforward=2048
+    def __init__(self, embedding_size, num_heads, dim_feedforward, dropout):
+        super().__init__()
+        self.cross_atten = layers.MultiHeadAttention(num_heads=num_heads, key_dim=embedding_size // num_heads, dropout=dropout)
+        
+        self.linear1 = layers.Dense(dim_feedforward, activation='relu')
+        self.linear2 = layers.Dense(embedding_size)
+
+        self.dropout1 = layers.Dropout(dropout)
+        self.dropout2 = layers.Dropout(dropout)
+        self.dropout3 = layers.Dropout(dropout)
+
+        self.norm1 = layers.LayerNormalization(epsilon=1e-6)
+        self.norm2 = layers.LayerNormalization(epsilon=1e-6)
+    
+
+    def call(self, target, memory):
+        # TODO: paper adds positional embedding to query and key?
+        atten_output = self.cross_atten(query=target, key=memory, value=memory)
+
+        # apply residual connection between original target and atten_output
+        target = target + self.dropout1(atten_output)
+        target = self.norm1(target)
+
+        # feed forward
+        ff_output = self.linear1(target)
+        ff_output = self.dropout2(ff_output)
+        ff_output = self.linear2(ff_output)
+
+        # apply residual connection between target from before and ff output
+        target = target + self.dropout3(ff_output)
+        target = self.norm2(target)
+
+        return target
