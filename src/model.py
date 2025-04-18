@@ -79,7 +79,22 @@ class RackleMuffin(tf.keras.Model):
         # co-atten btwn img and text
         self.co_atten = CoAtten(self.embedding_size, self.dropout_rate)
 
-        return
+        # MuFFM (MULTIPLEX FEATURE FUSION MODULE)
+        self.muffm_mlp_sigmoid = tf.keras.Sequential([
+            layers.Dense(self.embedding_size),
+            layers.ReLU(),
+            layers.Dense(self.embedding_size, activation='sigmoid')
+        ])
+        self.muffm_mlp = tf.keras.Sequential([
+            layers.Dense(self.embedding_size),
+            layers.ReLU(),
+            layers.Dense(self.embedding_size),
+            layers.LayerNormalization()
+        ])
+
+        # PREDICTION
+        self.classifier = layers.Dense(self.num_classes)
+        
     
     def call(self, inputs, text_data):
         # NOTE: batch_size = 32
@@ -153,10 +168,28 @@ class RackleMuffin(tf.keras.Model):
         img_co_atten = self.co_atten(img_cross, text_cross, text_cross) # 32, 768
         
         # linear combo of outputs
-        rclm_output = 0.6 * img_co_atten + 0.4 * txt_co_atten  # (32,768)
+        rclm_output = 0.6*img_co_atten + 0.4*txt_co_atten  # (32,768)
 
         # CLIP-VIEW FEATURE FUSION
-        
+        # cross atten btwn og CLIP img/txt outputs
+        clip_txt_cross_atten = self.co_atten(clip_text_feature, clip_image_feature, clip_image_feature) # 32,768
+        clip_img_cross_atten = self.co_atten(clip_image_feature, clip_text_feature, clip_text_feature) # 32,768
+        # linear combo
+        clip_fuse_features = 0.7*clip_txt_cross_atten + 0.3*clip_img_cross_atten # (32,768)
+
+        # MuFFM (MULTIPLEX FEATURE FUSION MODULE)
+        muffm_sigmoid = self.muffm_mlp_sigmoid(tf.concat([clip_fuse_features, rclm_output], axis=-1)) # 32,768
+        muffm = self.muffm_mlp(tf.concat([clip_fuse_features, rclm_output], axis=-1)) # 32,768
+
+        output = 0.5*clip_fuse_features + 0.5*(muffm_sigmoid+muffm) # (32,768)
+
+        # PREDICTION
+        logits = self.classifier(output) # (32,2)
+
+        # softmax for probabilities
+        probs = tf.nn.softmax(logits, axis=-1)
+
+        return probs
 
 # cross attention custom class (called TransformerCrossLayer in paper)
 class CrossAtten(layers.Layer):
