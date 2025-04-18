@@ -4,6 +4,7 @@ from tqdm import tqdm
 from transformers import CLIPProcessor
 from model import RackleMuffin
 import numpy as np
+from train import train, test
 
 def main():
     # Load the processed dataset
@@ -50,31 +51,34 @@ def main():
 
     # print("created test dataset")
 
-    # Create the model
+
+    # attempt to run train!
     model = RackleMuffin()
+    train(model, train_dataset, text_list_train)
+    
+
+    # Create the model
 
     # breaking:
     # trying to take a batch (32) of examples
     # then, it tries to stack each dimension together (all text, all images)
     # it breaks because the text is different shapes
     # Group into batches of 32
-    batch_size = 32
-    text_list_batches = [text_list_train[i:i + batch_size] for i in range(0, len(text_list_train), batch_size)]
+    # batch_size = 32
+    # text_list_batches = [text_list_train[i:i + batch_size] for i in range(0, len(text_list_train), batch_size)]
 
-    for (batch, text_batch) in tqdm(zip(train_dataset, text_list_batches), desc="Training"):
-        clip_inputs, labels = batch
-        # supposedly should be able to get text_batch now?
+    # for (batch, text_batch) in tqdm(zip(train_dataset, text_list_batches), desc="Training"):
+    #     clip_inputs, labels = batch
+    #     # supposedly should be able to get text_batch now?
 
-        # print("first clip_input_ids:", clip_inputs["input_ids"][0])
-        # print("first text in batch:", text_batch[0])
+    #     # print("first clip_input_ids:", clip_inputs["input_ids"][0])
+    #     # print("first text in batch:", text_batch[0])
 
-        model(clip_inputs, text_batch)
-        break
+    #     model(clip_inputs, text_batch)
+    #     break
         
     # Optionally save the model after every epoch
     # model.save_pretrained("./saved_model")
-
-    print("done running main!")
 
 
 if __name__ == '__main__':
