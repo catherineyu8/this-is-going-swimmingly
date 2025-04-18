@@ -32,7 +32,7 @@ def train(model, train_clip, train_text):
             inputs, labels = batch
 
             # TODO: shuffle inputs, labels, and text together (make sure to take into account dictionaries)
-            
+        
             # do forward pass w/ gradient tape
             with tf.GradientTape() as tape:
                 preds = model(inputs, batch, text_batch)
