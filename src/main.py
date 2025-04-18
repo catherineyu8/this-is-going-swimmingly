@@ -21,7 +21,7 @@ def main():
     train_dataset = dataset["train"].to_tf_dataset(
         columns=["input_ids", "attention_mask", "pixel_values"],
         label_cols="label",
-        shuffle=True,
+        shuffle=False,
         batch_size=32,
     )
     text_list_train = dataset["train"]["text_list"]
@@ -62,16 +62,19 @@ def main():
     text_list_batches = [text_list_train[i:i + batch_size] for i in range(0, len(text_list_train), batch_size)]
 
     for (batch, text_batch) in tqdm(zip(train_dataset, text_list_batches), desc="Training"):
-        inputs, labels = batch
+        clip_inputs, labels = batch
         # supposedly should be able to get text_batch now?
 
-        print("first input_ids:", inputs["input_ids"][0])
-        print("first text in batch:", text_batch[0])
+        # print("first clip_input_ids:", clip_inputs["input_ids"][0])
+        # print("first text in batch:", text_batch[0])
 
-        model(inputs)
+        model(clip_inputs, text_batch)
+        break
         
     # Optionally save the model after every epoch
-    model.save_pretrained("./saved_model")
+    # model.save_pretrained("./saved_model")
+
+    print("done running main!")
 
 
 if __name__ == '__main__':
