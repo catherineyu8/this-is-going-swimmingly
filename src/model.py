@@ -94,8 +94,10 @@ class RackleMuffin(tf.keras.Model):
 
         # PREDICTION
         self.classifier = layers.Dense(self.num_classes)
-        
     
+        # LOSS
+        self.loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+
     def call(self, inputs, text_data):
         # NOTE: batch_size = 32
         """
@@ -186,10 +188,11 @@ class RackleMuffin(tf.keras.Model):
         # PREDICTION
         logits = self.classifier(output) # (32,2)
 
-        # softmax for probabilities
-        probs = tf.nn.softmax(logits, axis=-1)
+        # softmax for probabilities -- Got rid of this for correct loss function!
+        #probs = tf.nn.softmax(logits, axis=-1)
 
-        return probs
+        # want to return logits for CE Loss
+        return logits
 
 # cross attention custom class (called TransformerCrossLayer in paper)
 class CrossAtten(layers.Layer):
