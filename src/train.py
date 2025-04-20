@@ -1,5 +1,6 @@
 from tqdm import tqdm, trange
 import tensorflow as tf
+import json
 
 
 # trains the model for some number of epochs
@@ -23,6 +24,7 @@ def train(model, train_clip, train_text):
         recall = tf.keras.metrics.Recall()
 
         # batch raw text data (train_clip already batched)
+        # NOTE: there are 620 batches in the training data set
         text_batched = [train_text[i:i + batch_size] for i in range(0, len(train_text), batch_size)]
         batch_counter = 0
         # iterate over batches of CLIP data and raw text
@@ -52,7 +54,6 @@ def train(model, train_clip, train_text):
             recall.update_state(labels, pred_classes)
 
             print(f"completed metric calculation of batch {batch_counter}")
-
             batch_counter += 1
         
         # compute F1 score for epoch
@@ -61,6 +62,21 @@ def train(model, train_clip, train_text):
         rec = recall.result().numpy()
         f1 = 2 * (prec * rec) / (prec + rec + 1e-8)
         print(f"Finished training epoch {i} with accuracy {acc} and F1 {f1}")
+
+        # log data in json file for epoch
+        log_data = {
+            "epoch": i,
+            "accuracy": float(acc),
+            "precision": float(prec),
+            "recall": float(rec),
+            "f1_score": float(f1)
+        }
+        with open("training_log.json", "a") as f:
+            f.write(json.dumps(log_data) + "\n")
+
+    # save model's weights (cannot save full model since it has custom classes/call method w 2 args)
+    model.save_weights("racklemuffin_weights.h5")
+    print("saved model weights to racklemuffin_weights.h5")
 
         
 def test(model, test_clip, test_text):
@@ -76,7 +92,7 @@ def test(model, test_clip, test_text):
     for (batch, text_batch) in tqdm(zip(test_clip, text_batched), desc="Testing"):
         print(f"\ntesting batch: {batch_counter}")
         inputs, labels = batch
-        preds = model(inputs, batch, text_batch)
+        preds = model(inputs, text_batch)
 
         # get predicted class labels and update metrics
         pred_classes = tf.argmax(preds, axis=-1)
@@ -90,7 +106,7 @@ def test(model, test_clip, test_text):
     rec = recall.result().numpy()
     f1 = 2 * (prec * rec) / (prec + rec + 1e-8)
 
-    print(f"\nTest Accuracy: {acc:.4f}")
-    print(f"Test Precision: {prec:.4f}")
-    print(f"Test Recall: {rec:.4f}")
-    print(f"Test F1 Score: {f1:.4f}")
+    print(f"\nTest Accuracy: {acc}")
+    print(f"Test Precision: {prec}")
+    print(f"Test Recall: {rec}")
+    print(f"Test F1 Score: {f1}")

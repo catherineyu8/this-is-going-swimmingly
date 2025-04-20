@@ -23,6 +23,7 @@ class RackleMuffin(tf.keras.Model):
 
         # CLIP model both image and text processing
         self.clip_model = TFCLIPModel.from_pretrained("openai/clip-vit-base-patch32")
+        self.clip_model.trainable = False
         # text and image linear layers to reshape CLIP output to hidden size
         self.text_linear = tf.keras.Sequential([
             layers.Dense(self.image_hidden_size, input_shape=(self.text_hidden_size,)),
@@ -46,6 +47,7 @@ class RackleMuffin(tf.keras.Model):
         self.bert_tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
         # self.bert_config = BertConfig.from_pretrained("bert-base-uncased")
         self.bert_model = TFBertModel.from_pretrained("bert-base-uncased")
+        self.bert_model.trainable = False
         self.bert_linear = tf.keras.Sequential([
             layers.Dense(self.embedding_size),
             layers.ReLU(),

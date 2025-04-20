@@ -8,6 +8,9 @@ from train import train, test
 
 def main():
     # Load the processed dataset
+    print(tf.config.list_physical_devices('GPU'))
+    print(tf.sysconfig.get_build_info())
+
     dataset = load_from_disk("data/mmsd_processed")
 
     print("loaded small data chunk from disk")
@@ -40,21 +43,42 @@ def main():
 
     # print("created val dataset")
 
-    # # Convert testing split to tf.data.Dataset
-    # test_dataset = dataset["test"].to_tf_dataset(
-    #     columns=["input_ids", "attention_mask", "pixel_values", "label", "text_list", "image_list", "label_list", "samples"],
-    #     label_cols="label",
-    #     shuffle=False,
-    #     batch_size=32,
-    #     collate_fn=tf_collate_fn  # You can define one if needed
-    # )
+    # Convert testing split to tf.data.Dataset
+    test_dataset = dataset["test"].to_tf_dataset(
+        columns=["input_ids", "attention_mask", "pixel_values"],
+        label_cols="label",
+        shuffle=False,
+        batch_size=32,
+    )
+    text_list_test = dataset["test"]["text_list"]
+    print("created test dataset")
 
-    # print("created test dataset")
+    for inputs, _ in test_dataset.take(1):
+        print("Batch structure:")
+        print("input_ids shape:", inputs['input_ids'].shape)
+        print("attention_mask shape:", inputs['attention_mask'].shape)
+        print("pixel_values shape:", inputs['pixel_values'].shape)
 
 
-    # attempt to run train!
+    # attempt to run train! COMMENT OUT TEST STUFF FOR TRAIN
+    #model = RackleMuffin()
+    #train(model, train_dataset, text_list_train)
+
+    # attempt to run test!
     model = RackleMuffin()
-    train(model, train_dataset, text_list_train)
+
+    # Do a dummy forward pass to build the model
+    dummy_inputs = {
+        "input_ids": tf.zeros((32, 77), dtype=tf.int32),
+        "attention_mask": tf.ones((32, 77), dtype=tf.int32),
+        "pixel_values": tf.zeros((32, 3, 224, 224), dtype=tf.float32),
+    }
+    dummy_text_list = np.array(["this is a caption"] * 32)
+    _ = model(dummy_inputs, dummy_text_list)
+
+    # Now load the weights and call test
+    model.load_weights("racklemuffin_weights.h5") 
+    test(model, test_dataset, text_list_test)
     
 
     # Create the model
