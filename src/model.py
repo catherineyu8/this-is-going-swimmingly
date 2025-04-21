@@ -1,7 +1,6 @@
 import tensorflow as tf
 import tensorflow.keras.layers as layers
 from transformers import TFCLIPModel, BertConfig, BertTokenizer, TFBertModel
-# from transformers.models.bert.modeling_bert import BertLayer
 
 class RackleMuffin(tf.keras.Model):
 
