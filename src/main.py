@@ -60,11 +60,7 @@ def main():
         print("pixel_values shape:", inputs['pixel_values'].shape)
 
 
-    # attempt to run train! COMMENT OUT TEST STUFF FOR TRAIN
     model = RackleMuffin()
-    train(model, train_dataset, text_list_train)
-
-    # attempt to run test!
 
     # Do a dummy forward pass to build the model
     dummy_inputs = {
@@ -75,12 +71,14 @@ def main():
     dummy_text_list = np.array(["this is a caption"] * 32)
     _ = model(dummy_inputs, dummy_text_list)
 
+
+    # train model
+    train(model, train_dataset, text_list_train)
+
     # Now load the weights and call test
     model.load_weights("racklemuffin_weights.h5") 
     test(model, test_dataset, text_list_test)
     
-
-    # Create the model
 
     # breaking:
     # trying to take a batch (32) of examples

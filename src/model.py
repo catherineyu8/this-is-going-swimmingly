@@ -99,11 +99,7 @@ class RackleMuffin(tf.keras.Model):
     
         # LOSS
         self.loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
-
-        # split trainable vars to use diff learning rates for clip and others
-        self.clip_vars = self.clip_model.trainable_variables
-        self.rest_vars = [var for var in self.trainable_variables if var not in self.clip_vars]
-
+    
     def call(self, inputs, text_data):
         # NOTE: batch_size = 32
         """
