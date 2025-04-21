@@ -11,7 +11,14 @@ def train(model, train_clip, train_text):
     # learning rate is much higher here than in paper
     # paper uses AdamW (which has decoupled weight decay)
     # TODO: if this is flopping try switching to tf AdamW
-    optimizer = tf.keras.optimizers.legacy.Adam(learning_rate=0.001)
+    clip_optimizer = tf.keras.optimizers.legacy.Adam(learning_rate=1e-6)
+    rest_optimizer = tf.keras.optimizers.legacy.Adam(learning_rate=5e-4)
+
+    # split trainable vars to use diff learning rates for clip and others
+    clip_vars = model.clip_model.trainable_variables
+    rest_vars = [var for var in model.trainable_variables if all(var is not clip_var for clip_var in clip_vars)]
+    # rest_vars = [var for var in model.trainable_variables if var not in clip_vars]
+        
     batch_size = 32
     num_epochs = 5
 
@@ -44,9 +51,17 @@ def train(model, train_clip, train_text):
             
             print(f"completed forward pass of batch {batch_counter}")
 
-            # get gradients and call optimizer (trainable_vars inherited))
+            # get/apply gradients separately for CLIP and others and call corresponding optimizer (trainable_vars inherited))
             grads = tape.gradient(loss, model.trainable_variables)
-            optimizer.apply_gradients(zip(grads, model.trainable_variables))
+            # clip_grads = [g for v, g in zip(model.trainable_variables, grads) if v in clip_vars]
+            # rest_grads = [g for v, g in zip(model.trainable_variables, grads) if v in rest_vars]
+            clip_grads = [g for v, g in zip(model.trainable_variables, grads) if any(v is clip_var for clip_var in clip_vars)]
+            rest_grads = [g for v, g in zip(model.trainable_variables, grads) if any(v is rest_var for rest_var in rest_vars)]
+
+
+            clip_optimizer.apply_gradients(zip(clip_grads, clip_vars))
+            rest_optimizer.apply_gradients(zip(rest_grads, rest_vars))
+
             # TODO: define model accuracy function? (if this flops)
             pred_classes = tf.argmax(preds, axis=-1)
             accuracy.update_state(labels, pred_classes)
