@@ -43,7 +43,7 @@ def train(model, train_clip, train_text):
             # guess who figured that out after training the model for 619/620 batches and getting an index out of range error TvT
             this_batch_size = len(text_batch)
 
-            shuffled_indices = tf.random.shuffle(tf.range(batch_size))
+            shuffled_indices = tf.random.shuffle(tf.range(this_batch_size))
 
             inputs = {
                 k: tf.gather(v, shuffled_indices, axis=0)
