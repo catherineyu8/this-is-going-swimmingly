@@ -1,6 +1,7 @@
 from tqdm import tqdm, trange
 import tensorflow as tf
 import json
+import random
 
 
 # trains the model for some number of epochs
@@ -11,16 +12,15 @@ def train(model, train_clip, train_text):
     # learning rate is much higher here than in paper
     # paper uses AdamW (which has decoupled weight decay)
     # TODO: if this is flopping try switching to tf AdamW
-    clip_optimizer = tf.keras.optimizers.legacy.Adam(learning_rate=1e-6)
+    # clip_optimizer = tf.keras.optimizers.legacy.Adam(learning_rate=1e-6)
     rest_optimizer = tf.keras.optimizers.legacy.Adam(learning_rate=5e-4)
 
     # split trainable vars to use diff learning rates for clip and others
     clip_vars = model.clip_model.trainable_variables
     rest_vars = [var for var in model.trainable_variables if all(var is not clip_var for clip_var in clip_vars)]
-    # rest_vars = [var for var in model.trainable_variables if var not in clip_vars]
         
     batch_size = 32
-    num_epochs = 5
+    num_epochs = 2 # TODO: adjust as needed
 
     for i in range(num_epochs):
         # define metric variables
@@ -36,16 +36,25 @@ def train(model, train_clip, train_text):
         batch_counter = 0
         # iterate over batches of CLIP data and raw text
         for (batch, text_batch) in tqdm(zip(train_clip, text_batched), desc="Training"):
-            inputs, labels = batch
-            print(f"\ntraining batch: {batch_counter} of epoch {i}")
-
             # TODO: shuffle inputs, labels, and text together (make sure to take into account dictionaries)
+            inputs, labels = batch
+
+            shuffled_indices = tf.random.shuffle(tf.range(batch_size))
+
+            inputs = {
+                k: tf.gather(v, shuffled_indices, axis=0)
+                for k, v in inputs.items()
+            }
+            labels = tf.gather(labels, shuffled_indices)
+            text_batch = [text_batch[i] for i in shuffled_indices.numpy()]
+
+            print(f"\ntraining batch: {batch_counter} of epoch {i}")            
         
             # do forward pass w/ gradient tape
             with tf.GradientTape() as tape:
                 preds = model(inputs, text_batch)
-                print(f"labels shape: {labels.shape}, labels dtype: {labels.dtype}") # should be (32,)
-                print(f"preds shape: {preds.shape}, preds dtype: {preds.dtype}") # should be (32, 2)
+                # print(f"labels shape: {labels.shape}, labels dtype: {labels.dtype}") # should be (32,)
+                # print(f"preds shape: {preds.shape}, preds dtype: {preds.dtype}") # should be (32, 2)
                 # apply sparse cross entropy loss
                 loss = model.loss(labels, preds)
             
@@ -53,13 +62,11 @@ def train(model, train_clip, train_text):
 
             # get/apply gradients separately for CLIP and others and call corresponding optimizer (trainable_vars inherited))
             grads = tape.gradient(loss, model.trainable_variables)
-            # clip_grads = [g for v, g in zip(model.trainable_variables, grads) if v in clip_vars]
-            # rest_grads = [g for v, g in zip(model.trainable_variables, grads) if v in rest_vars]
-            clip_grads = [g for v, g in zip(model.trainable_variables, grads) if any(v is clip_var for clip_var in clip_vars)]
+            # clip_grads = [g for v, g in zip(model.trainable_variables, grads) if any(v is clip_var for clip_var in clip_vars)]
             rest_grads = [g for v, g in zip(model.trainable_variables, grads) if any(v is rest_var for rest_var in rest_vars)]
 
 
-            clip_optimizer.apply_gradients(zip(clip_grads, clip_vars))
+            # clip_optimizer.apply_gradients(zip(clip_grads, clip_vars))
             rest_optimizer.apply_gradients(zip(rest_grads, rest_vars))
 
             # TODO: define model accuracy function? (if this flops)

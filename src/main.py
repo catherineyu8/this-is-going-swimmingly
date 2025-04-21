@@ -13,7 +13,7 @@ def main():
 
     dataset = load_from_disk("data/mmsd_processed")
 
-    print("loaded small data chunk from disk")
+    print("Loaded data from disk.")
 
     # two_clip_batches = dataset.to_tf_dataset(
     #     columns=["input_ids", "attention_mask", "pixel_values"],
@@ -22,61 +22,45 @@ def main():
     #     batch_size=32,
     # )
 
+    # split data into train/test and convert to tf.data.Dataset
     train_dataset = dataset["train"].to_tf_dataset(
         columns=["input_ids", "attention_mask", "pixel_values"],
         label_cols="label",
         shuffle=False,
         batch_size=32,
     )
-    text_list_train = dataset["train"]["text_list"]
+    text_list_train = dataset["train"]["text_list"].tolist()
 
-    # print("created training dataset")
-
-    # Convert validation split to tf.data.Dataset
-    # val_dataset = dataset["validation"].to_tf_dataset(
-    #     columns=["input_ids", "attention_mask", "pixel_values", "label", "text_list", "image_list", "label_list", "samples"],
-    #     label_cols="label",
-    #     shuffle=False,
-    #     batch_size=32,
-    #     collate_fn=tf_collate_fn  # You can define one if needed
-    # )
-
-    # print("created val dataset")
-
-    # Convert testing split to tf.data.Dataset
     test_dataset = dataset["test"].to_tf_dataset(
         columns=["input_ids", "attention_mask", "pixel_values"],
         label_cols="label",
         shuffle=False,
         batch_size=32,
     )
-    text_list_test = dataset["test"]["text_list"]
-    print("created test dataset")
+    text_list_test = dataset["test"]["text_list"].tolist()
 
-    for inputs, _ in test_dataset.take(1):
-        print("Batch structure:")
-        print("input_ids shape:", inputs['input_ids'].shape)
-        print("attention_mask shape:", inputs['attention_mask'].shape)
-        print("pixel_values shape:", inputs['pixel_values'].shape)
+    # for inputs, _ in test_dataset.take(1):
+    #     print("Batch structure:")
+    #     print("input_ids shape:", inputs['input_ids'].shape)
+    #     print("attention_mask shape:", inputs['attention_mask'].shape)
+    #     print("pixel_values shape:", inputs['pixel_values'].shape)
 
-
+    # initialize model, do dummy forward pass to build model
     model = RackleMuffin()
 
-    # Do a dummy forward pass to build the model
     dummy_inputs = {
         "input_ids": tf.zeros((32, 77), dtype=tf.int32),
         "attention_mask": tf.ones((32, 77), dtype=tf.int32),
         "pixel_values": tf.zeros((32, 3, 224, 224), dtype=tf.float32),
     }
-    dummy_text_list = np.array(["this is a caption"] * 32)
+    dummy_text_list = ["this is a caption"] * 32
     _ = model(dummy_inputs, dummy_text_list)
-
 
     # train model
     train(model, train_dataset, text_list_train)
 
-    # Now load the weights and call test
-    model.load_weights("racklemuffin_weights.h5") 
+    # load model weights and test
+    model.load_weights("racklemuffin_weights.h5")
     test(model, test_dataset, text_list_test)
     
 
