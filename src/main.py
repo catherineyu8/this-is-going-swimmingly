@@ -15,13 +15,6 @@ def main():
 
     print("Loaded data from disk.")
 
-    # two_clip_batches = dataset.to_tf_dataset(
-    #     columns=["input_ids", "attention_mask", "pixel_values"],
-    #     label_cols="label",
-    #     shuffle=True,
-    #     batch_size=32,
-    # )
-
     # split data into train/test and convert to tf.data.Dataset
     train_dataset = dataset["train"].to_tf_dataset(
         columns=["input_ids", "attention_mask", "pixel_values"],
@@ -60,8 +53,8 @@ def main():
     train(model, train_dataset, text_list_train)
 
     # load model weights and test
-    model.load_weights("racklemuffin_weights.h5")
-    test(model, test_dataset, text_list_test)
+    # model.load_weights("racklemuffin_weights.h5")
+    # test(model, test_dataset, text_list_test)
     
 
     # breaking:
