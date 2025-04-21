@@ -127,7 +127,6 @@ class RackleMuffin(tf.keras.Model):
         resnet_img_features = self.resnet_linear(resnet_img_features) # (32, 768)
 
         # BERT
-        text_data = text_data.tolist() # convert numpy array to python list for bert
         bert_encoded_input = self.bert_tokenizer(text_data, padding=True, truncation=True, return_tensors="tf")
         # TODO: move bert input to device?
         bert_output = self.bert_model(**bert_encoded_input, training=False)

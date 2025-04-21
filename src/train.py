@@ -1,6 +1,7 @@
 from tqdm import tqdm, trange
 import tensorflow as tf
 import json
+import random
 
 
 # trains the model for some number of epochs
@@ -35,11 +36,19 @@ def train(model, train_clip, train_text):
         batch_counter = 0
         # iterate over batches of CLIP data and raw text
         for (batch, text_batch) in tqdm(zip(train_clip, text_batched), desc="Training"):
-            inputs, labels = batch
-            print(f"\ntraining batch: {batch_counter} of epoch {i}")
-
             # TODO: shuffle inputs, labels, and text together (make sure to take into account dictionaries)
+            inputs, labels = batch
 
+            shuffled_indices = tf.random.shuffle(tf.range(batch_size))
+
+            inputs = {
+                k: tf.gather(v, shuffled_indices, axis=0)
+                for k, v in inputs.items()
+            }
+            labels = tf.gather(labels, shuffled_indices)
+            text_batch = [text_batch[i] for i in shuffled_indices.numpy()]
+
+            print(f"\ntraining batch: {batch_counter} of epoch {i}")            
         
             # do forward pass w/ gradient tape
             with tf.GradientTape() as tape:

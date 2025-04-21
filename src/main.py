@@ -29,7 +29,7 @@ def main():
         shuffle=False,
         batch_size=32,
     )
-    text_list_train = dataset["train"]["text_list"]
+    text_list_train = dataset["train"]["text_list"].tolist()
 
     test_dataset = dataset["test"].to_tf_dataset(
         columns=["input_ids", "attention_mask", "pixel_values"],
@@ -37,7 +37,7 @@ def main():
         shuffle=False,
         batch_size=32,
     )
-    text_list_test = dataset["test"]["text_list"]
+    text_list_test = dataset["test"]["text_list"].tolist()
 
     # for inputs, _ in test_dataset.take(1):
     #     print("Batch structure:")
@@ -53,14 +53,14 @@ def main():
         "attention_mask": tf.ones((32, 77), dtype=tf.int32),
         "pixel_values": tf.zeros((32, 3, 224, 224), dtype=tf.float32),
     }
-    dummy_text_list = np.array(["this is a caption"] * 32)
+    dummy_text_list = ["this is a caption"] * 32
     _ = model(dummy_inputs, dummy_text_list)
 
     # train model
     train(model, train_dataset, text_list_train)
 
     # load model weights and test
-    model.load_weights("racklemuffin_weights.h5") 
+    model.load_weights("racklemuffin_weights.h5")
     test(model, test_dataset, text_list_test)
     
 
