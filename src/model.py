@@ -23,7 +23,6 @@ class RackleMuffin(tf.keras.Model):
 
         # CLIP model both image and text processing
         self.clip_model = TFCLIPModel.from_pretrained("openai/clip-vit-base-patch32")
-        self.clip_model.trainable = False
         # text and image linear layers to reshape CLIP output to hidden size
         self.text_linear = tf.keras.Sequential([
             layers.Dense(self.image_hidden_size, input_shape=(self.text_hidden_size,)),
@@ -40,6 +39,7 @@ class RackleMuffin(tf.keras.Model):
         # TODO: the paper joins resnet with position encoding
         # TODO: check params for resnet/use their own backbone. include_top=False removes final classificaiton layer
         self.resnet_backbone = tf.keras.applications.ResNet50(weights='imagenet', include_top=False, pooling='avg')
+        self.resnet_backbone.trainable = False # freeze resnet params
         self.resnet_linear = layers.Dense(self.image_hidden_size)
 
         # BERT model for text processing
@@ -47,7 +47,7 @@ class RackleMuffin(tf.keras.Model):
         self.bert_tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
         # self.bert_config = BertConfig.from_pretrained("bert-base-uncased")
         self.bert_model = TFBertModel.from_pretrained("bert-base-uncased")
-        self.bert_model.trainable = False
+        self.bert_model.trainable = False # freeze BERT params
         self.bert_linear = tf.keras.Sequential([
             layers.Dense(self.embedding_size),
             layers.ReLU(),
@@ -66,7 +66,7 @@ class RackleMuffin(tf.keras.Model):
             layers.LayerNormalization()
         ])
         self.text_self_atten = SelfAtten(self.embedding_size, self.num_attn_heads, self.dim_feedforward, self.dropout_rate)
-        self.text_cros_atten = CrossAtten(self.embedding_size, self.num_attn_heads, self.dim_feedforward, self.dropout_rate)
+        self.text_cross_atten = CrossAtten(self.embedding_size, self.num_attn_heads, self.dim_feedforward, self.dropout_rate)
 
         # img cross atten
         self.image_linear2 = tf.keras.Sequential([
@@ -76,7 +76,7 @@ class RackleMuffin(tf.keras.Model):
             layers.LayerNormalization()
         ])
         self.image_self_atten = SelfAtten(self.embedding_size, self.num_attn_heads, self.dim_feedforward, self.dropout_rate)
-        self.image_cros_atten = CrossAtten(self.embedding_size, self.num_attn_heads, self.dim_feedforward, self.dropout_rate)
+        self.image_cross_atten = CrossAtten(self.embedding_size, self.num_attn_heads, self.dim_feedforward, self.dropout_rate)
 
         # co-atten btwn img and text
         self.co_atten = CoAtten(self.embedding_size, self.dropout_rate)
@@ -99,6 +99,10 @@ class RackleMuffin(tf.keras.Model):
     
         # LOSS
         self.loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+
+        # split trainable vars to use diff learning rates for clip and others
+        self.clip_vars = self.clip_model.trainable_variables
+        self.rest_vars = [var for var in self.trainable_variables if var not in self.clip_vars]
 
     def call(self, inputs, text_data):
         # NOTE: batch_size = 32
@@ -154,17 +158,17 @@ class RackleMuffin(tf.keras.Model):
         # stack and self atten
         text_self = self.text_self_atten(tf.stack([clip_text_feature, sfim_txt_im], axis=1)) # (32,2,768)
         # cross attention on the 2 above ouptuts
-        text_cross = self.text_cros_atten(target=txt_cat_sqz, memory=text_self) # 32,1,768
+        text_cross = self.text_cross_atten(target=txt_cat_sqz, memory=text_self) # 32,1,768
         text_cross = tf.squeeze(text_cross, axis=1) # (32, 768)
 
         # for images:
         # concat and squeeze
-        img_cat_sqz = self.text_linear2(tf.concat([clip_image_feature, sfim_img_txt], axis=-1)) # (32, 768)
+        img_cat_sqz = self.image_linear2(tf.concat([clip_image_feature, sfim_img_txt], axis=-1)) # (32, 768)
         img_cat_sqz = tf.expand_dims(img_cat_sqz, axis=1) # (32, 1, 768)
         # stack and self atten
-        img_self = self.img_self_atten(tf.stack([clip_image_feature, sfim_img_txt], axis=1)) # (32,2,768)
+        img_self = self.image_self_atten(tf.stack([clip_image_feature, sfim_img_txt], axis=1)) # (32,2,768)
         # cross attention on the 2 above ouptuts
-        img_cross = self.img_cros_atten(target=img_cat_sqz, memory=img_self) # 32,1,768
+        img_cross = self.image_cross_atten(target=img_cat_sqz, memory=img_self) # 32,1,768
         img_cross = tf.squeeze(img_cross, axis=1) # (32, 768)
         
         # co atten x2 between image and text outputs

@@ -61,11 +61,10 @@ def main():
 
 
     # attempt to run train! COMMENT OUT TEST STUFF FOR TRAIN
-    #model = RackleMuffin()
-    #train(model, train_dataset, text_list_train)
+    model = RackleMuffin()
+    train(model, train_dataset, text_list_train)
 
     # attempt to run test!
-    model = RackleMuffin()
 
     # Do a dummy forward pass to build the model
     dummy_inputs = {

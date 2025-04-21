@@ -11,7 +11,8 @@ def train(model, train_clip, train_text):
     # learning rate is much higher here than in paper
     # paper uses AdamW (which has decoupled weight decay)
     # TODO: if this is flopping try switching to tf AdamW
-    optimizer = tf.keras.optimizers.legacy.Adam(learning_rate=0.001)
+    clip_optimizer = tf.keras.optimizers.legacy.Adam(learning_rate=1e-6)
+    rest_optimizer = tf.keras.optimizers.legacy.Adam(learning_rate=5e-4)
     batch_size = 32
     num_epochs = 5
 
@@ -44,9 +45,14 @@ def train(model, train_clip, train_text):
             
             print(f"completed forward pass of batch {batch_counter}")
 
-            # get gradients and call optimizer (trainable_vars inherited))
+            # get/apply gradients separately for CLIP and others and call corresponding optimizer (trainable_vars inherited))
             grads = tape.gradient(loss, model.trainable_variables)
-            optimizer.apply_gradients(zip(grads, model.trainable_variables))
+            clip_grads = [g for v, g in zip(model.trainable_variables, grads) if v in model.clip_vars]
+            rest_grads = [g for v, g in zip(model.trainable_variables, grads) if v in model.rest_vars]
+
+            clip_optimizer.apply_gradients(zip(clip_grads, model.clip_vars))
+            rest_optimizer.apply_gradients(zip(rest_grads, model.other_vars))
+            
             # TODO: define model accuracy function? (if this flops)
             pred_classes = tf.argmax(preds, axis=-1)
             accuracy.update_state(labels, pred_classes)
