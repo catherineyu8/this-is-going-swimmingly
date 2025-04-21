@@ -37,8 +37,6 @@ def preprocess(example):
         "samples": inputs["pixel_values"],  # already preprocessed image
     }
 
-<<<<<<< HEAD
-
 # Get the directory this script is in (i.e., the "data" folder)
 current_dir = os.path.dirname(os.path.abspath(__file__))
 # processed_data_dir = os.path.join(current_dir, "mmsd_processed")
