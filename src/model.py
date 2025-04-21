@@ -162,9 +162,9 @@ class RackleMuffin(tf.keras.Model):
         img_cat_sqz = self.text_linear2(tf.concat([clip_image_feature, sfim_img_txt], axis=-1)) # (32, 768)
         img_cat_sqz = tf.expand_dims(img_cat_sqz, axis=1) # (32, 1, 768)
         # stack and self atten
-        img_self = self.text_self_atten(tf.stack([clip_image_feature, sfim_img_txt], axis=1)) # (32,2,768)
+        img_self = self.img_self_atten(tf.stack([clip_image_feature, sfim_img_txt], axis=1)) # (32,2,768)
         # cross attention on the 2 above ouptuts
-        img_cross = self.text_cros_atten(target=img_cat_sqz, memory=img_self) # 32,1,768
+        img_cross = self.img_cros_atten(target=img_cat_sqz, memory=img_self) # 32,1,768
         img_cross = tf.squeeze(img_cross, axis=1) # (32, 768)
         
         # co atten x2 between image and text outputs
