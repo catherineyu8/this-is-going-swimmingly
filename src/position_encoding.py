@@ -1,7 +1,6 @@
 import math
 import tensorflow as tf
 from tensorflow import keras
-from tensorflow.keras import layers
 
 class PositionEmbeddingSine(keras.layers.Layer): #switched to keras in params, otherwise class is like the same
     def __init__(self, num_pos_feats=64, temperature=10000, normalize=False, scale=None, **kwargs):
