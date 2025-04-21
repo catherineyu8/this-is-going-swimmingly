@@ -3,7 +3,6 @@ import tensorflow.keras.layers as layers
 from transformers import TFCLIPModel, BertConfig, BertTokenizer, TFBertModel
 # from transformers.models.bert.modeling_bert import BertLayer
 
-
 class RackleMuffin(tf.keras.Model):
 
     def __init__(self):
@@ -23,6 +22,7 @@ class RackleMuffin(tf.keras.Model):
 
         # CLIP model both image and text processing
         self.clip_model = TFCLIPModel.from_pretrained("openai/clip-vit-base-patch32")
+        self.clip_model.trainable = False # freeze clip params for now. TODO: undo later and use w diff learning rate?
         # text and image linear layers to reshape CLIP output to hidden size
         self.text_linear = tf.keras.Sequential([
             layers.Dense(self.image_hidden_size, input_shape=(self.text_hidden_size,)),
