@@ -4,6 +4,7 @@ import json
 import random
 import numpy as np
 import matplotlib.pyplot as plt
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 
 
 # trains the model for some number of epochs
@@ -129,6 +130,8 @@ def test(model, test_clip, test_text):
     recall = tf.keras.metrics.Recall()
 
     batch_counter = 0
+    all_preds = []
+    all_labels = []
 
     for (batch, text_batch) in tqdm(zip(test_clip, text_batched), desc="Testing"):
         print(f"\ntesting batch: {batch_counter}")
@@ -137,9 +140,24 @@ def test(model, test_clip, test_text):
 
         # get predicted class labels and update metrics
         pred_classes = tf.argmax(preds, axis=-1)
+
+        # Debug: Print a few predictions and labels
+        print(f"Predicted: {pred_classes.numpy()[:5]}")
+        print(f"Ground Truth: {labels.numpy()[:5]}")
+        print(f"Pred shape: {pred_classes.shape}, Label shape: {labels.shape}")
+
+        # Optional: Manual accuracy check
+        correct = np.sum(pred_classes.numpy() == labels.numpy())
+        total = labels.shape[0]
+        print(f"Manual batch accuracy: {correct}/{total} = {correct / total:.2f}")
+
+
         accuracy.update_state(labels, pred_classes)
         precision.update_state(labels, pred_classes)
         recall.update_state(labels, pred_classes)
+
+        all_preds.extend(pred_classes.numpy())
+        all_labels.extend(labels.numpy())
 
     # compute F1 score
     acc = accuracy.result().numpy()
@@ -151,3 +169,9 @@ def test(model, test_clip, test_text):
     print(f"Test Precision: {prec}")
     print(f"Test Recall: {rec}")
     print(f"Test F1 Score: {f1}")
+
+    cm = confusion_matrix(all_labels, all_preds)
+    disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=[0, 1])
+    disp.plot(cmap=plt.cm.Blues)
+    plt.title("Confusion Matrix")
+    plt.show()
