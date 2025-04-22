@@ -49,11 +49,25 @@ def main():
     dummy_text_list = ["this is a caption"] * 32
     _ = model(dummy_inputs, dummy_text_list)
 
-    # train model
+    # TRAIN model
+    '''
+    # clip the train dataset to only 60 to make sure it works locally
+    # train_dataset_clipped = train_dataset.unbatch().take(60).batch(32)
+    # text_list_train_clipped = text_list_train[:60]
+    # train(model, train_dataset_clipped, text_list_train_clipped)
+    '''
+
     train(model, train_dataset, text_list_train)
 
-    # load model weights and test
+    # load weights and TEST model
     # model.load_weights("racklemuffin_weights.h5")
+    '''
+    # clip test dataset to make sure it works locally
+    # test_dataset_clipped = test_dataset.unbatch().take(60).batch(32)
+    # text_list_trest_clipped = text_list_test[:60]
+    # test(model, test_dataset_clipped, text_list_trest_clipped)
+    '''
+
     # test(model, test_dataset, text_list_test)
     
 

@@ -2,6 +2,8 @@ from tqdm import tqdm, trange
 import tensorflow as tf
 import json
 import random
+import numpy as np
+import matplotlib.pyplot as plt
 
 
 # trains the model for some number of epochs
@@ -20,7 +22,8 @@ def train(model, train_clip, train_text):
     rest_vars = [var for var in model.trainable_variables if all(var is not clip_var for clip_var in clip_vars)]
         
     batch_size = 32
-    num_epochs = 2 # TODO: adjust as needed
+    num_epochs = 1 # TODO: adjust as needed
+    losses = []
 
     for i in range(num_epochs):
         # define metric variables
@@ -61,6 +64,7 @@ def train(model, train_clip, train_text):
                 # print(f"preds shape: {preds.shape}, preds dtype: {preds.dtype}") # should be (32, 2)
                 # apply sparse cross entropy loss
                 loss = model.loss(labels, preds)
+                losses.append(loss.numpy())
             
             print(f"completed forward pass of batch {batch_counter}")
 
@@ -100,6 +104,16 @@ def train(model, train_clip, train_text):
         with open("training_log.json", "a") as f:
             f.write(json.dumps(log_data) + "\n")
 
+    # plot loss
+    x_val_epochs = np.linspace(0, num_epochs, len(losses))
+
+    plt.plot(x_val_epochs, losses)
+    plt.xlabel("Epoch")
+    plt.ylabel("Loss")
+    plt.title("Loss vs Epoch")
+    plt.savefig("loss_vs_epoch.png")
+    plt.show()
+
     # save model's weights (cannot save full model since it has custom classes/call method w 2 args)
     model.save_weights("racklemuffin_weights.h5")
     print("saved model weights to racklemuffin_weights.h5")
@@ -113,6 +127,7 @@ def test(model, test_clip, test_text):
     accuracy = tf.keras.metrics.Accuracy()
     precision = tf.keras.metrics.Precision()
     recall = tf.keras.metrics.Recall()
+
     batch_counter = 0
 
     for (batch, text_batch) in tqdm(zip(test_clip, text_batched), desc="Testing"):
