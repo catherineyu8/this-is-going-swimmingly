@@ -23,16 +23,19 @@ class RackleMuffin(tf.keras.Model):
         self.clip_model = TFCLIPModel.from_pretrained("openai/clip-vit-base-patch32")
         self.clip_model.trainable = False # freeze clip params for now. TODO: undo later and use w diff learning rate?
         # text and image linear layers to reshape CLIP output to hidden size
-        self.text_linear = tf.keras.Sequential([
-            layers.Dense(self.image_hidden_size, input_shape=(self.text_hidden_size,)),
-            layers.Dropout(self.dropout_rate),
-            layers.Activation(tf.keras.activations.gelu)  # or tf.keras.layers.GELU() in newer TF versions
-        ])
-        self.image_linear = tf.keras.Sequential([
-            layers.Dense(self.image_hidden_size, input_shape=(self.image_hidden_size,)),
-            layers.Dropout(self.dropout_rate),
-            layers.Activation(tf.keras.activations.gelu)  # or tf.keras.layers.GELU() in newer TF versions
-        ])
+        # TODO: currently using "simple_linear" version of this to try and fix model cheating
+        # self.text_linear = tf.keras.Sequential([
+        #     layers.Dense(self.image_hidden_size, input_shape=(self.text_hidden_size,)),
+        #     layers.Dropout(self.dropout_rate),
+        #     layers.Activation(tf.keras.activations.gelu)  # or tf.keras.layers.GELU() in newer TF versions
+        # ])
+        self.text_linear = layers.Dense(self.image_hidden_size)
+        # self.image_linear = tf.keras.Sequential([
+        #     layers.Dense(self.image_hidden_size, input_shape=(self.image_hidden_size,)),
+        #     layers.Dropout(self.dropout_rate),
+        #     layers.Activation(tf.keras.activations.gelu)  # or tf.keras.layers.GELU() in newer TF versions
+        # ])
+        self.image_linear = layers.Dense(self.image_hidden_size)
         
         # RESNET for image processing
         # TODO: the paper joins resnet with position encoding
