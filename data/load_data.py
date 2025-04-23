@@ -2,9 +2,6 @@ from datasets import load_dataset, load_from_disk
 from transformers import CLIPProcessor
 import os
 
-# Load the dataset
-dataset = load_dataset("coderchen01/MMSD2.0", name="mmsd-v2")
-
 # get just the first 64 examples: 2 batches
 # dataset_chunk = dataset["train"].select(range(64))
 
@@ -53,6 +50,9 @@ processed_data_dir = os.path.join(current_dir, "mmsd_processed")
 
 def main():
     if not os.path.exists(processed_data_dir):
+        # Load the dataset
+        dataset = load_dataset("coderchen01/MMSD2.0", name="mmsd-v2")
+
         # this doesn't actually batch the data, it just processes it in batches
         dataset = dataset.map(preprocess, batched=True, num_proc=4)
 
