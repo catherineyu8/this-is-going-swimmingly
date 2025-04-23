@@ -5,6 +5,7 @@ from transformers import CLIPProcessor
 from model import RackleMuffin
 import numpy as np
 from train import train, test
+from collections import Counter
 
 def main():
     # Load the processed dataset
@@ -15,7 +16,23 @@ def main():
 
     print("Loaded data from disk.")
 
+####
+    # # count percentage of 0 and 1 labeled data
+    # label_counts = Counter(dataset["train"]["label"])
+    # total = sum(label_counts.values())
+
+    # # Print percentages
+    # for label, count in label_counts.items():
+    #     percentage = (count / total) * 100
+    #     print(f"Label {label}: {count} samples ({percentage:.2f}%)")
+
+    # # return
+####
+    
+
     # split data into train/test and convert to tf.data.Dataset
+    # shuffle the training dataset
+    dataset["train"] = dataset["train"].shuffle(seed=42)
     train_dataset = dataset["train"].to_tf_dataset(
         columns=["input_ids", "attention_mask", "pixel_values"],
         label_cols="label",
