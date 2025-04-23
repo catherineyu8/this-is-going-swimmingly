@@ -88,39 +88,45 @@ def preprocess_muse(example):
 current_dir = os.path.dirname(os.path.abspath(__file__))
 processed_data_dir = os.path.join(current_dir, "muse_processed")
 
-if not os.path.exists(processed_data_dir):
-    # this doesn't actually batch the data, it just processes it in batches
-    processed_train_dataset = train_dataset.map(preprocess_muse, batched=True, num_proc=4)
-    processed_val_dataset = val_dataset.map(preprocess_muse, batched=True, num_proc=4)
-    processed_test_dataset = test_dataset.map(preprocess_muse, batched=True, num_proc=4)
+def main():
+    if not os.path.exists(processed_data_dir):
+        # this doesn't actually batch the data, it just processes it in batches
+        processed_train_dataset = train_dataset.map(preprocess_muse, batched=True, num_proc=4)
+        processed_val_dataset = val_dataset.map(preprocess_muse, batched=True, num_proc=4)
+        processed_test_dataset = test_dataset.map(preprocess_muse, batched=True, num_proc=4)
 
-    processed_train_dataset.set_format(
-        type="numpy",
-        columns=["input_ids", "attention_mask", "pixel_values", "label", "text_list", "image_list", "label_list", "samples"]
-    )
-    processed_val_dataset.set_format(
-        type="numpy",
-        columns=["input_ids", "attention_mask", "pixel_values", "label", "text_list", "image_list", "label_list", "samples"]
-    )
-    processed_test_dataset.set_format(
-        type="numpy",
-        columns=["input_ids", "attention_mask", "pixel_values", "label", "text_list", "image_list", "label_list", "samples"]
-    )
+        processed_train_dataset.set_format(
+            type="numpy",
+            columns=["input_ids", "attention_mask", "pixel_values", "label", "text_list", "image_list", "label_list", "samples"]
+        )
+        processed_val_dataset.set_format(
+            type="numpy",
+            columns=["input_ids", "attention_mask", "pixel_values", "label", "text_list", "image_list", "label_list", "samples"]
+        )
+        processed_test_dataset.set_format(
+            type="numpy",
+            columns=["input_ids", "attention_mask", "pixel_values", "label", "text_list", "image_list", "label_list", "samples"]
+        )
 
-    full_dataset = DatasetDict({
-        "train": processed_train_dataset,
-        "val": processed_val_dataset,
-        "test": processed_test_dataset,
-    })
+        full_dataset = DatasetDict({
+            "train": processed_train_dataset,
+            "val": processed_val_dataset,
+            "test": processed_test_dataset,
+        })
 
-    full_dataset.save_to_disk(processed_data_dir)
-    # processed_train_dataset.save_to_disk(os.path.join(processed_data_dir, "train"))
-    # processed_val_dataset.save_to_disk(os.path.join(processed_data_dir, "val"))
-    # processed_test_dataset.save_to_disk(os.path.join(processed_data_dir, "test"))
+        full_dataset.save_to_disk(processed_data_dir)
+        # processed_train_dataset.save_to_disk(os.path.join(processed_data_dir, "train"))
+        # processed_val_dataset.save_to_disk(os.path.join(processed_data_dir, "val"))
+        # processed_test_dataset.save_to_disk(os.path.join(processed_data_dir, "test"))
 
-else:
-    # load processed data if it exists
-    full_dataset = load_from_disk(processed_data_dir)
-    # processed_train_dataset = load_from_disk(os.path.join(processed_data_dir, "train"))
-    # processed_val_dataset = load_from_disk(os.path.join(processed_data_dir, "val"))
-    # processed_test_dataset = load_from_disk(os.path.join(processed_data_dir, "test"))
+    else:
+        # load processed data if it exists
+        full_dataset = load_from_disk(processed_data_dir)
+        # processed_train_dataset = load_from_disk(os.path.join(processed_data_dir, "train"))
+        # processed_val_dataset = load_from_disk(os.path.join(processed_data_dir, "val"))
+        # processed_test_dataset = load_from_disk(os.path.join(processed_data_dir, "test"))
+
+if __name__ == "__main__":
+    from multiprocessing import freeze_support
+    freeze_support()
+    main()
