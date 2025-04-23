@@ -7,6 +7,7 @@ import numpy as np
 from train import train, test
 import argparse
 import sys
+from collections import Counter
 
 def main():
     args = parse_args()
@@ -19,6 +20,9 @@ def main():
     muse_dataset = load_from_disk("data/muse_processed")
 
     print("Loaded data from disk.")
+
+    # shuffle the MMSD training dataset
+    mmsd_dataset["train"] = mmsd_dataset["train"].shuffle(seed=42)
 
     # split MMSD data into train/test/val
     # tf.data.Dataset contains input format needed for CLIP
@@ -48,6 +52,7 @@ def main():
     )
     mmsd_textlist_val = mmsd_dataset["validation"]["text_list"].tolist()
 
+    # get MUSE data
     batched_muse_test = muse_dataset["test"].to_tf_dataset(
         columns=["input_ids", "attention_mask", "pixel_values"],
         label_cols="label",

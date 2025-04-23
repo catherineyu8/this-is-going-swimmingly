@@ -66,48 +66,36 @@ class PositionEmbeddingLearned(keras.layers.Layer):
         self.num_pos_feats = num_pos_feats
         self.row_embed = keras.layers.Embedding(50, num_pos_feats)
         self.col_embed = keras.layers.Embedding(50, num_pos_feats)
-        
-    def build(self, input_shape): #basically does reset_parameters
-        super().build(input_shape)
-        self.row_embed.embeddings.assign(tf.random.uniform(shape=self.row_embed.embeddings.shape))
-        self.col_embed.embeddings.assign(tf.random.uniform(shape=self.col_embed.embeddings.shape))
-    
+
     def call(self, tensor, mask=None):
-        """
-        Args:
-            tensor: Input tensor [batch_size, H, W, C]
-            mask: Optional mask (said tf is supposed to have this)
-        Returns:
-            Positional encoding [batch_size, H, W, 2*num_pos_feats] #have to change from [B, 2*num_feats, H, W] to fit tf
-        """
         batch_size = tf.shape(tensor)[0]
         h, w = tf.shape(tensor)[1], tf.shape(tensor)[2]
-        
+
         i = tf.range(w, dtype=tf.int32)
         j = tf.range(h, dtype=tf.int32)
-        
-        x_emb = self.col_embed(i) 
-        y_emb = self.row_embed(j)  
-        
+
+        x_emb = self.col_embed(i)
+        y_emb = self.row_embed(j)
+
         x_emb = tf.expand_dims(x_emb, axis=0)  # [1, w, num_pos_feats]
-        x_emb = tf.repeat(x_emb, h, axis=0)  # [h, w, num_pos_feats]
-        
+        x_emb = tf.repeat(x_emb, h, axis=0)     # [h, w, num_pos_feats]
+
         y_emb = tf.expand_dims(y_emb, axis=1)  # [h, 1, num_pos_feats]
-        y_emb = tf.repeat(y_emb, w, axis=1)  # [h, w, num_pos_feats]
-        
+        y_emb = tf.repeat(y_emb, w, axis=1)     # [h, w, num_pos_feats]
+
         pos = tf.concat([y_emb, x_emb], axis=-1)  # [h, w, 2*num_pos_feats]
-        
-        pos = tf.expand_dims(pos, axis=0)  # [1, h, w, 2*num_pos_feats]
+        pos = tf.expand_dims(pos, axis=0)         # [1, h, w, 2*num_pos_feats]
         pos = tf.repeat(pos, batch_size, axis=0)  # [batch_size, h, w, 2*num_pos_feats]
-        
+
         return pos
-    
+
     def get_config(self):
         config = super().get_config()
         config.update({
             'num_pos_feats': self.num_pos_feats,
         })
         return config
+
     
 def build_position_encoding(args): # I think this should be same
     N_steps = args.hidden_dim // 2
@@ -118,3 +106,26 @@ def build_position_encoding(args): # I think this should be same
     else:
         raise ValueError(f"not supported {args.position_embedding}")
     return position_embedding
+
+#TEST BLOCK
+if __name__ == "__main__":
+    batch_size = 2
+    height = 10
+    width = 12
+    channels = 256
+
+    dummy_tensor = tf.random.normal((batch_size, height, width, channels))
+    dummy_mask = tf.zeros((batch_size, height, width), dtype=tf.int32)
+
+    print("Testing PositionEmbeddingSine...")
+    sine_embed = PositionEmbeddingSine(num_pos_feats=64, normalize=True)
+    pos_sine = sine_embed(dummy_tensor, dummy_mask)
+    print(f"Output shape (sine): {pos_sine.shape}")  # Expect [2, 10, 12, 128]
+    print(f"Output sample (sine) at [0,0,0]: {pos_sine[0,0,0].numpy()[:8]}")
+
+    print("\nTesting PositionEmbeddingLearned...")
+    learned_embed = PositionEmbeddingLearned(num_pos_feats=64)
+    pos_learned = learned_embed(dummy_tensor)
+    print(f"Output shape (learned): {pos_learned.shape}")  # Expect [2, 10, 12, 128]
+    print(f"Output sample (learned) at [0,0,0]: {pos_learned[0,0,0].numpy()[:8]}")
+
