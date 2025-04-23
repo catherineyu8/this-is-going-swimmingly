@@ -1,5 +1,6 @@
 import pandas as pd
-from datasets import Dataset, load_dataset, load_from_disk
+from datasets import Dataset, load_dataset, load_from_disk, DatasetDict
+
 from transformers import CLIPProcessor
 from PIL import Image
 import os
@@ -106,12 +107,20 @@ if not os.path.exists(processed_data_dir):
         columns=["input_ids", "attention_mask", "pixel_values", "label", "text_list", "image_list", "label_list", "samples"]
     )
 
-    processed_train_dataset.save_to_disk(os.path.join(processed_data_dir, "train"))
-    processed_val_dataset.save_to_disk(os.path.join(processed_data_dir, "val"))
-    processed_test_dataset.save_to_disk(os.path.join(processed_data_dir, "test"))
+    full_dataset = DatasetDict({
+        "train": processed_train_dataset,
+        "val": processed_val_dataset,
+        "test": processed_test_dataset,
+    })
+
+    full_dataset.save_to_disk(processed_data_dir)
+    # processed_train_dataset.save_to_disk(os.path.join(processed_data_dir, "train"))
+    # processed_val_dataset.save_to_disk(os.path.join(processed_data_dir, "val"))
+    # processed_test_dataset.save_to_disk(os.path.join(processed_data_dir, "test"))
 
 else:
     # load processed data if it exists
-    processed_train_dataset = load_from_disk(os.path.join(processed_data_dir, "train"))
-    processed_val_dataset = load_from_disk(os.path.join(processed_data_dir, "val"))
-    processed_test_dataset = load_from_disk(os.path.join(processed_data_dir, "test"))
+    full_dataset = load_from_disk(processed_data_dir)
+    # processed_train_dataset = load_from_disk(os.path.join(processed_data_dir, "train"))
+    # processed_val_dataset = load_from_disk(os.path.join(processed_data_dir, "val"))
+    # processed_test_dataset = load_from_disk(os.path.join(processed_data_dir, "test"))
