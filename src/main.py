@@ -17,7 +17,6 @@ def main():
     print(tf.sysconfig.get_build_info())
 
     mmsd_dataset = load_from_disk("data/mmsd_processed")
-    muse_dataset = load_from_disk("data/muse_processed")
 
     print("Loaded data from disk.")
 
@@ -51,15 +50,6 @@ def main():
         batch_size=32,
     )
     mmsd_textlist_val = mmsd_dataset["validation"]["text_list"].tolist()
-
-    # get MUSE data
-    batched_muse_test = muse_dataset["test"].to_tf_dataset(
-        columns=["input_ids", "attention_mask", "pixel_values"],
-        label_cols="label",
-        shuffle=False,
-        batch_size=32,
-    )
-    muse_textlist_test = muse_dataset["test"]["text_list"].tolist()
 
     # for inputs, _ in test_dataset.take(1):
     #     print("Batch structure:")
@@ -98,7 +88,26 @@ def main():
         '''
         
         model.load_weights("racklemuffin_weights.h5")
-        test(model, batched_muse_test, muse_textlist_test)
+        
+        if args.dataset == "muse":
+            # get MUSE data
+            muse_dataset = load_from_disk("data/muse_processed")
+            
+            batched_muse_test = muse_dataset["test"].to_tf_dataset(
+                columns=["input_ids", "attention_mask", "pixel_values"],
+                label_cols="label",
+                shuffle=False,
+                batch_size=32,
+            )
+            muse_textlist_test = muse_dataset["test"]["text_list"].tolist()
+
+            test(model, batched_muse_test, muse_textlist_test)
+        
+        elif args.dataset == "mmsd2.0":
+            test(model, batched_mmsd_test, mmsd_textlist_test)
+
+        else:
+            print("Invalid dataset. Use --dataset mmsd2.0 or --dataset muse.")
 
     else:
         print("Invalid mode. Use --mode train or --mode test.")

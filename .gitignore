@@ -1,3 +1,4 @@
 data/mmsd_processed/
 data/muse_processed/
 data/muse/
+**/__pycache__/
