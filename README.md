@@ -2,16 +2,16 @@
 
 ## data downloading/preprocessing
 
-MMSD 2.0 dataset
+MMSD 2.0 dataset download & preprocessing
 
--   To download and preprocess the MMSD 2.0 dataset, run data/load_data.py
+-   Run data/load_data.py
 -   This will generate a folder called "mmsd_processed" which contains MMSD 2.0 training/validation/testing data splits
 -   Do NOT upload this to github! (it is in the .gitignore)
 
-MUSE dataset
+MUSE dataset download & preprocessing
 
 -   Create a folder called "muse" within the data folder
--   From https://github.com/LCS2-IIITD/Multimodal-Sarcasm-Explanation-MuSE, download the images (link found in the README) as well as the train_df.tsv, val_df.tsv, and test_df.tsv files. Put these all in the "muse" folder (it should contain the 3 tsv files and a folder named "images" containing all the images)
+-   From https://github.com/LCS2-IIITD/Multimodal-Sarcasm-Explanation-MuSE, download the images (link found in the README) as well as the train_df.tsv, val_df.tsv, and test_df.tsv files. Put these all in the "muse" folder. It should contain the 3 tsv files and a folder named "images" containing all the images.
 -   Run data/load_data_muse.py
 -   This will generate a folder called "muse_processed" which contains MUSE training/validation/testing data splits
 -   Do NOT upload the muse_processed or muse folders to github! (it is in the .gitignore)

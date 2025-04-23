@@ -159,6 +159,8 @@ def test(model, test_clip, test_text):
         all_preds.extend(pred_classes.numpy())
         all_labels.extend(labels.numpy())
 
+        batch_counter += 1
+
     # compute F1 score
     acc = accuracy.result().numpy()
     prec = precision.result().numpy()
