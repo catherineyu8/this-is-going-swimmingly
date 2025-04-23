@@ -142,14 +142,14 @@ def test(model, test_clip, test_text):
         pred_classes = tf.argmax(preds, axis=-1)
 
         # Debug: Print a few predictions and labels
-        print(f"Predicted: {pred_classes.numpy()[:5]}")
-        print(f"Ground Truth: {labels.numpy()[:5]}")
-        print(f"Pred shape: {pred_classes.shape}, Label shape: {labels.shape}")
+        # print(f"Predicted: {pred_classes.numpy()[:5]}")
+        # print(f"Ground Truth: {labels.numpy()[:5]}")
+        # print(f"Pred shape: {pred_classes.shape}, Label shape: {labels.shape}")
 
         # Optional: Manual accuracy check
-        correct = np.sum(pred_classes.numpy() == labels.numpy())
-        total = labels.shape[0]
-        print(f"Manual batch accuracy: {correct}/{total} = {correct / total:.2f}")
+        # correct = np.sum(pred_classes.numpy() == labels.numpy())
+        # total = labels.shape[0]
+        # print(f"Manual batch accuracy: {correct}/{total} = {correct / total:.2f}")
 
 
         accuracy.update_state(labels, pred_classes)
