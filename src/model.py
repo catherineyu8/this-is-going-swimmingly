@@ -1,6 +1,7 @@
 import tensorflow as tf
 import tensorflow.keras.layers as layers
 from transformers import TFCLIPModel, BertConfig, BertTokenizer, TFBertModel
+from backbone import build_backbone, NestedTensor
 
 class RackleMuffin(tf.keras.Model):
 
@@ -40,9 +41,22 @@ class RackleMuffin(tf.keras.Model):
         # RESNET for image processing
         # TODO: the paper joins resnet with position encoding
         # TODO: check params for resnet/use their own backbone. include_top=False removes final classificaiton layer
-        self.resnet_backbone = tf.keras.applications.ResNet50(weights='imagenet', include_top=False, pooling='avg')
-        self.resnet_backbone.trainable = False # freeze resnet params
-        self.resnet_linear = layers.Dense(self.image_hidden_size)
+        # self.resnet_backbone = tf.keras.applications.ResNet50(weights='imagenet', include_top=False, pooling='avg')
+        # self.resnet_backbone.trainable = False # freeze resnet params
+        # self.resnet_linear = layers.Dense(self.image_hidden_size)
+
+        # custom backbone
+        self.backbone = build_backbone(
+            lr_backbone=0,
+            masks=True,
+            dilation=False,
+            backbone="resnet50",
+            position_embedding="sine",
+            hidden_dim=self.image_hidden_size
+        )
+        self.backbone.trainable = False
+        self.backbone_linear = layers.Dense(self.image_hidden_size)
+        #custom backbone end
 
         # BERT model for text processing
         # Load tokenizer (same as in PyTorch)
@@ -123,10 +137,25 @@ class RackleMuffin(tf.keras.Model):
         clip_image_feature = self.image_linear(clip_image_feature)  # 32, 768
 
         # RESNET
-        transformed_images = tf.transpose(inputs["pixel_values"], perm=[0, 2, 3, 1]) # convert dim format to what tensorflow expects: (B, H, W, C)
-        transformed_images = tf.keras.applications.resnet50.preprocess_input(transformed_images) # TODO: if we use their backbone def, maybe don't do this, but this is what resnet expects/needs
-        resnet_img_features = self.resnet_backbone(transformed_images) # (32, 2048)
-        resnet_img_features = self.resnet_linear(resnet_img_features) # (32, 768)
+        # transformed_images = tf.transpose(inputs["pixel_values"], perm=[0, 2, 3, 1]) # convert dim format to what tensorflow expects: (B, H, W, C)
+        # transformed_images = tf.keras.applications.resnet50.preprocess_input(transformed_images) # TODO: if we use their backbone def, maybe don't do this, but this is what resnet expects/needs
+        # resnet_img_features = self.resnet_backbone(transformed_images) # (32, 2048)
+        # resnet_img_features = self.resnet_linear(resnet_img_features) # (32, 768)
+
+        # Backbone
+        transformed_images = tf.transpose(inputs["pixel_values"], perm=[0, 2, 3, 1])
+        # mask
+        batch_size = tf.shape(transformed_images)[0]
+        img_height = tf.shape(transformed_images)[1]
+        img_width = tf.shape(transformed_images)[2]
+        mask = tf.ones((batch_size, img_height, img_width), dtype=tf.bool)
+
+        nested_input = NestedTensor(transformed_images, mask)
+        backbone_features, pos_encoding = self.backbone(nested_input)
+        # last feature map from layers
+        last_feature = backbone_features[-1].tensors
+        backbone_img_features = tf.reduce_mean(last_feature, axis=[1, 2])  # Global avg pooling
+        backbone_img_features = self.backbone_linear(backbone_img_features)
 
         # BERT
         bert_encoded_input = self.bert_tokenizer(text_data, padding=True, truncation=True, return_tensors="tf")
@@ -138,13 +167,13 @@ class RackleMuffin(tf.keras.Model):
 
         # SFIM (SHALLOW FEATURE INTERACTION MODULE)
         # expand dims to be able to do cross-atten
-        resnet_img_features = tf.expand_dims(resnet_img_features, axis=1)  # (32, 1, 768)
+        backbone_img_features = tf.expand_dims(backbone_img_features, axis=1)  # (32, 1, 768)
         bert_txt_features = tf.expand_dims(bert_txt_features, axis=1)    # (32, 1, 768)
 
-        sfim_img_txt = self.sfim_imgtext_cross(target=resnet_img_features, memory=bert_txt_features) # (32, 1, 768)
+        sfim_img_txt = self.sfim_imgtext_cross(target=backbone_img_features, memory=bert_txt_features) # (32, 1, 768)
         sfim_img_txt = tf.squeeze(sfim_img_txt, axis=1)  # (32, 768)
 
-        sfim_txt_im = self.sfim_imgtext_cross(target=bert_txt_features, memory=resnet_img_features) # (32, 1, 768)
+        sfim_txt_im = self.sfim_imgtext_cross(target=bert_txt_features, memory=backbone_img_features) # (32, 1, 768)
         sfim_txt_im = tf.squeeze(sfim_txt_im, axis=1)  # (32, 768)
 
         # RCLM (RELATIONAL CONTEXT LEARNING MODULE)
