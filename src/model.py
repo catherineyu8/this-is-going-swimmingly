@@ -190,7 +190,7 @@ class RackleMuffin(tf.keras.Model):
         output = 0.5*clip_fuse_features + 0.5*(muffm_sigmoid+muffm) # (32,768)
 
         # PREDICTION
-        output = layers.Dropout(output)
+        output = self.dropout(output)
         logits = self.classifier(output) # (32,2)
 
         # softmax for probabilities -- Got rid of this for correct loss function!
