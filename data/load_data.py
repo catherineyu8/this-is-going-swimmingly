@@ -2,9 +2,6 @@ from datasets import load_dataset, load_from_disk
 from transformers import CLIPProcessor
 import os
 
-# load dataset
-dataset = load_dataset("coderchen01/MMSD2.0", name="mmsd-v2")
-
 # get just the first 64 examples: 2 batches
 # dataset_chunk = dataset["train"].select(range(64))
 
@@ -50,17 +47,25 @@ processed_data_dir = os.path.join(current_dir, "mmsd_processed")
 # small_chunk.save_to_disk(processed_data_dir)
 
 
+def main():
+    if not os.path.exists(processed_data_dir):
+        # Load the dataset
+        dataset = load_dataset("coderchen01/MMSD2.0", name="mmsd-v2")
 
-if not os.path.exists(processed_data_dir):
-    # this doesn't actually batch the data, it just processes it in batches
-    dataset = dataset.map(preprocess, batched=True, num_proc=4)
+        # this doesn't actually batch the data, it just processes it in batches
+        dataset = dataset.map(preprocess, batched=True, num_proc=4)
 
-    dataset.set_format(
-        type="numpy",
-        columns=["input_ids", "attention_mask", "pixel_values", "label", "text_list", "image_list", "label_list", "samples"]
-    )
-    dataset.save_to_disk(processed_data_dir)
-else:
-    # load processed data if it exists
-    dataset = load_from_disk(processed_data_dir)
+        dataset.set_format(
+            type="numpy",
+            columns=["input_ids", "attention_mask", "pixel_values", "label", "text_list", "image_list", "label_list", "samples"]
+        )
+        dataset.save_to_disk(processed_data_dir)
+    else:
+        # load processed data if it exists
+        dataset = load_from_disk(processed_data_dir)
+
+if __name__ == "__main__":
+    from multiprocessing import freeze_support
+    freeze_support()
+    main()
 
