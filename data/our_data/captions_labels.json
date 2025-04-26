@@ -1,0 +1,17 @@
+[
+	{
+		"image_filename": "IMG_2490.jpg",
+		"caption": "this is going swimmngly!",
+		"label": 1
+	},
+	{
+		"image_filename": "IMG_2501.jpg",
+		"caption": "this is going swimmngly!",
+		"label": 0
+	},
+	{
+		"image_filename": "IMG_9411.jpg",
+		"caption": "this is going swimmngly!",
+		"label": 1
+	}
+]
