@@ -36,6 +36,10 @@ To test the model on the MUSE/FLICKR custom combined dataset
 
 -   src/main.py --mode train --dataset muse_flickr
 
+To test the model on our own data
+
+-   src/main.py --mode train --dataset us
+
 To run a container with tensorflow in oscar:
 
 -   apptainer run --nv /oscar/runtime/software/external/ngc-containers/tensorflow.d/x86_64.d/tensorflow-24.03-tf2-py3.simg
