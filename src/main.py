@@ -1,4 +1,4 @@
-from datasets import load_from_disk
+from datasets import load_from_disk, concatenate_datasets
 import tensorflow as tf
 from tqdm import tqdm
 from transformers import CLIPProcessor
@@ -83,19 +83,27 @@ def main():
         
         model.load_weights("racklemuffin_weights.h5")
         
-        if args.dataset == "muse":
+        if args.dataset == "muse_flickr":
             # get MUSE data
             muse_dataset = load_from_disk("data/muse_processed")
+            # flickr_dataset = load_from_disk("data/flickr_processed")
             
-            batched_muse_test = muse_dataset["test"].to_tf_dataset(
+            batched_muse = muse_dataset["train"].to_tf_dataset(
                 columns=["input_ids", "attention_mask", "pixel_values"],
                 label_cols="label",
                 shuffle=False,
                 batch_size=32,
             )
-            muse_textlist_test = muse_dataset["test"]["text_list"].tolist()
+            muse_textlist = muse_dataset["train"]["text_list"].tolist()
 
-            test(model, batched_muse_test, muse_textlist_test)
+            # batched_flickr = 
+            # flickr_textlist = 
+
+            # combined_dataset = concatenate_datasets([batched_muse, batched_flickr])
+            # combined_textlist = muse_textlist + flickr_textlist
+
+            test(model, muse_dataset, muse_textlist)
+            # test(model, combined_dataset, combined_textlist)
         
         elif args.dataset == "mmsd2.0":
             test(model, batched_mmsd_test, mmsd_textlist_test)

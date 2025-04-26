@@ -1,6 +1,7 @@
 data/mmsd_processed/
 data/muse_processed/
 data/muse/
+data/flickr_processed/
 **/__pycache__/
 data/muse.zip
 saved_models/

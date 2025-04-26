@@ -136,7 +136,7 @@ def test(model, test_clip, test_text):
     for (batch, text_batch) in tqdm(zip(test_clip, text_batched), desc="Testing"):
         print(f"\ntesting batch: {batch_counter}")
         inputs, labels = batch
-        preds = model(inputs, text_batch)
+        preds = model(inputs, text_batch, training=False)
 
         # get predicted class labels and update metrics
         pred_classes = tf.argmax(preds, axis=-1)
