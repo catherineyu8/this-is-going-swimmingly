@@ -12,13 +12,13 @@ from collections import Counter
 def main():
     args = parse_args()
 
-    # Load the processed dataset
     print(tf.config.list_physical_devices('GPU'))
     print(tf.sysconfig.get_build_info())
 
-    mmsd_dataset = load_from_disk("data/mmsd_processed")
 
-    print("Loaded data from disk.")
+    # Load the processed MMSD 2.0 dataset
+    mmsd_dataset = load_from_disk("data/mmsd_processed")
+    print("Loaded MMSD data from disk.")
 
     # shuffle the MMSD training dataset
     mmsd_dataset["train"] = mmsd_dataset["train"].shuffle(seed=42)
@@ -50,12 +50,6 @@ def main():
         batch_size=32,
     )
     mmsd_textlist_val = mmsd_dataset["validation"]["text_list"].tolist()
-
-    # for inputs, _ in test_dataset.take(1):
-    #     print("Batch structure:")
-    #     print("input_ids shape:", inputs['input_ids'].shape)
-    #     print("attention_mask shape:", inputs['attention_mask'].shape)
-    #     print("pixel_values shape:", inputs['pixel_values'].shape)
 
     # initialize model, do dummy forward pass to build model
     model = RackleMuffin()

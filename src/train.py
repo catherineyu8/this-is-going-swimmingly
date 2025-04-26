@@ -23,7 +23,7 @@ def train(model, train_clip, train_text):
     rest_vars = [var for var in model.trainable_variables if all(var is not clip_var for clip_var in clip_vars)]
         
     batch_size = 32
-    num_epochs = 1 # TODO: adjust as needed
+    num_epochs = 2 # TODO: adjust as needed
     losses = []
 
     for i in range(num_epochs):
@@ -56,7 +56,7 @@ def train(model, train_clip, train_text):
             labels = tf.gather(labels, shuffled_indices)
             text_batch = [text_batch[i] for i in shuffled_indices.numpy()]
 
-            print(f"\ntraining batch: {batch_counter} of epoch {i}")            
+            print(f"\ntraining batch: {batch_counter} of epoch {i+1}")            
         
             # do forward pass w/ gradient tape
             with tf.GradientTape() as tape:
@@ -92,11 +92,11 @@ def train(model, train_clip, train_text):
         prec = precision.result().numpy()
         rec = recall.result().numpy()
         f1 = 2 * (prec * rec) / (prec + rec + 1e-8)
-        print(f"Finished training epoch {i} with accuracy {acc} and F1 {f1}")
+        print(f"Finished training epoch {i+1} with accuracy {acc} and F1 {f1}")
 
         # log data in json file for epoch
         log_data = {
-            "epoch": i,
+            "epoch": i+1,
             "accuracy": float(acc),
             "precision": float(prec),
             "recall": float(rec),
@@ -104,6 +104,10 @@ def train(model, train_clip, train_text):
         }
         with open("training_log.json", "a") as f:
             f.write(json.dumps(log_data) + "\n")
+
+        # save model's weights for each epoch (cannot save full model since it has custom classes/call method w 2 args)
+        model.save_weights(f"racklemuffin_weights_epoch_{i+1}.h5")
+        print(f"saved model weights to racklemuffin_weights_epoch_{i+1}.h5")
 
     # plot loss
     x_val_epochs = np.linspace(0, num_epochs, len(losses))
@@ -114,10 +118,6 @@ def train(model, train_clip, train_text):
     plt.title("Loss vs Epoch")
     plt.savefig("loss_vs_epoch.png")
     plt.show()
-
-    # save model's weights (cannot save full model since it has custom classes/call method w 2 args)
-    model.save_weights("racklemuffin_weights.h5")
-    print("saved model weights to racklemuffin_weights.h5")
 
         
 def test(model, test_clip, test_text):
@@ -159,6 +159,8 @@ def test(model, test_clip, test_text):
         all_preds.extend(pred_classes.numpy())
         all_labels.extend(labels.numpy())
 
+        batch_counter += 1
+
     # compute F1 score
     acc = accuracy.result().numpy()
     prec = precision.result().numpy()
@@ -175,3 +177,4 @@ def test(model, test_clip, test_text):
     disp.plot(cmap=plt.cm.Blues)
     plt.title("Confusion Matrix")
     plt.show()
+    plt.savefig("confusion_matrix.png")

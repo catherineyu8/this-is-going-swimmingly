@@ -1,9 +1,26 @@
 import pandas as pd
 from datasets import Dataset, load_dataset, load_from_disk, DatasetDict
-
 from transformers import CLIPProcessor
 from PIL import Image
 import os
+import gdown
+import zipfile
+
+# # download and unzip data from google drive link
+# zip_file_id = '1nOU_VwYaQT1TjCSYQ2z8SJFtMFpuTIac'
+# url = f'https://drive.google.com/uc?id={zip_file_id}'
+
+# # places to dave downloaded data
+# zip_path = './data/muse.zip'  # this should be the path to the ZIP file
+# extract_dir = './data/muse/'  # this is where files will be extracted
+# os.makedirs(extract_dir, exist_ok=True)
+
+# gdown.download(url, zip_path, quiet=False)
+
+# with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+#     zip_ref.extractall(extract_dir)
+
+# print("Downlaoded and unzipped MUSE data.")
 
 # Load TSV files using pandas
 train_df = pd.read_csv('./data/muse/train_df.tsv', sep='\t')  # Use the correct path for your TSV
