@@ -106,8 +106,8 @@ def train(model, train_clip, train_text):
             f.write(json.dumps(log_data) + "\n")
 
         # save model's weights for each epoch (cannot save full model since it has custom classes/call method w 2 args)
-        model.save_weights(f"racklemuffin_weights_dropout_epoch_{i+1}.h5")
-        print(f"saved model weights to racklemuffin_weights_dropout_epoch_{i+1}.h5")
+        model.save_weights(f"racklemuffin_weights_epoch_{i+1}.h5")
+        print(f"saved model weights to racklemuffin_weights_epoch_{i+1}.h5")
 
     # plot loss
     x_val_epochs = np.linspace(0, num_epochs, len(losses))
