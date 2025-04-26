@@ -117,8 +117,23 @@ def main():
 
             test(model, batched_mmsd_test, mmsd_textlist_test)
 
+        elif args.dataset == "us":
+            our_dataset = load_from_disk("data/our_processed")
+
+            # extract right formats for model
+            batched_data = our_dataset.to_tf_dataset(
+                columns=["input_ids", "attention_mask", "pixel_values"],
+                label_cols="label",
+                shuffle=False,
+                batch_size=32,
+            )
+            textlist = our_dataset["text_list"].tolist()
+
+            test(model, batched_data, textlist)
+
+
         else:
-            print("Invalid dataset. Use --dataset mmsd2.0 or --dataset muse_flickr.")
+            print("Invalid dataset. Use --dataset mmsd2.0 or --dataset muse_flickr or --dataset us.")
 
     else:
         print("Invalid mode. Use --mode train or --mode test.")
@@ -136,7 +151,7 @@ def parse_args():
 
     parser.add_argument(
         "--dataset", 
-        choices=["mmsd2.0", "muse_flickr"], 
+        choices=["mmsd2.0", "muse_flickr", "us"], 
         help="Dataset to use when testing."
     )
 
