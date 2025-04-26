@@ -8,48 +8,13 @@ from train import train, test
 import argparse
 import sys
 from collections import Counter
+import random
 
 def main():
     args = parse_args()
 
     print(tf.config.list_physical_devices('GPU'))
     print(tf.sysconfig.get_build_info())
-
-
-    # Load the processed MMSD 2.0 dataset
-    mmsd_dataset = load_from_disk("data/mmsd_processed")
-    print("Loaded MMSD data from disk.")
-
-    # shuffle the MMSD training dataset
-    mmsd_dataset["train"] = mmsd_dataset["train"].shuffle(seed=42)
-
-    # split MMSD data into train/test/val
-    # tf.data.Dataset contains input format needed for CLIP
-        # pixel_values used for RESNET
-    # text list contains input for BERT
-    batched_mmsd_train = mmsd_dataset["train"].to_tf_dataset(
-        columns=["input_ids", "attention_mask", "pixel_values"],
-        label_cols="label",
-        shuffle=False,
-        batch_size=32,
-    )
-    mmsd_textlist_train = mmsd_dataset["train"]["text_list"].tolist()
-
-    batched_mmsd_test = mmsd_dataset["test"].to_tf_dataset(
-        columns=["input_ids", "attention_mask", "pixel_values"],
-        label_cols="label",
-        shuffle=False,
-        batch_size=32,
-    )
-    mmsd_textlist_test = mmsd_dataset["test"]["text_list"].tolist()
-
-    batched_mmsd_val = mmsd_dataset["validation"].to_tf_dataset(
-        columns=["input_ids", "attention_mask", "pixel_values"],
-        label_cols="label",
-        shuffle=False,
-        batch_size=32,
-    )
-    mmsd_textlist_val = mmsd_dataset["validation"]["text_list"].tolist()
 
     # initialize model, do dummy forward pass to build model
     model = RackleMuffin()
@@ -70,6 +35,26 @@ def main():
         mmsd_textlist_train_clipped = mmsd_textlist_train[:60]
         train(model, batched_mmsd_train_clipped, mmsd_textlist_train_clipped)
         '''
+
+        # Load the processed MMSD 2.0 dataset
+        mmsd_dataset = load_from_disk("data/mmsd_processed")
+        print("Loaded MMSD data from disk.")
+
+        # shuffle the MMSD training dataset
+        mmsd_dataset["train"] = mmsd_dataset["train"].shuffle(seed=42)
+
+        # get train split of MMSD data
+        # tf.data.Dataset contains input format needed for CLIP
+            # pixel_values used for RESNET
+        # text list contains input for BERT
+        batched_mmsd_train = mmsd_dataset["train"].to_tf_dataset(
+            columns=["input_ids", "attention_mask", "pixel_values"],
+            label_cols="label",
+            shuffle=False,
+            batch_size=32,
+        )
+        mmsd_textlist_train = mmsd_dataset["train"]["text_list"].tolist()
+
         train(model, batched_mmsd_train, mmsd_textlist_train)
 
     # load weights and TEST model
@@ -81,61 +66,63 @@ def main():
         test(model, batched_mmsd_test_clipped, mmsd_textlist_test_clipped)
         '''
         
-        model.load_weights("racklemuffin_weights.h5")
+        model.load_weights("saved_models/bert_resnet_clip_frozen/racklemuffin_weights_epoch_2.h5")
         
         if args.dataset == "muse_flickr":
-            # get MUSE data
-            muse_dataset = load_from_disk("data/muse_processed")
-            # flickr_dataset = load_from_disk("data/flickr_processed")
+            # get MUSE and FLICKR data
+            muse_dataset = load_from_disk("data/muse_processed")["train"]
+            flickr_dataset = load_from_disk("data/flickr_processed")
+
+            # remove unneeded cols from dataset so we can combine them
+            # only save these columns: text, label, input_ids, attention_mask, pixel_values, text_list
+            muse_dataset = muse_dataset.remove_columns(["image_list", "label_list", "samples", "image"])
+            flickr_dataset = flickr_dataset.remove_columns(["image_list", "label_list", "samples", "image_filename", "image"])
             
-            batched_muse = muse_dataset["train"].to_tf_dataset(
+            # combine and shuffle data
+            combined_dataset = concatenate_datasets([muse_dataset, flickr_dataset])
+            combined_dataset = combined_dataset.shuffle(seed=42)
+
+            # extract right formats for model
+            batched_combined_data = combined_dataset.to_tf_dataset(
                 columns=["input_ids", "attention_mask", "pixel_values"],
                 label_cols="label",
                 shuffle=False,
                 batch_size=32,
             )
-            muse_textlist = muse_dataset["train"]["text_list"].tolist()
+            combined_textlist = combined_dataset["text_list"].tolist()
 
-            # batched_flickr = 
-            # flickr_textlist = 
-
-            # combined_dataset = concatenate_datasets([batched_muse, batched_flickr])
-            # combined_textlist = muse_textlist + flickr_textlist
-
-            test(model, muse_dataset, muse_textlist)
-            # test(model, combined_dataset, combined_textlist)
+            test(model, batched_combined_data, combined_textlist)
         
         elif args.dataset == "mmsd2.0":
+            # Load the processed MMSD 2.0 dataset
+            mmsd_dataset = load_from_disk("data/mmsd_processed")
+            print("Loaded MMSD data from disk.")
+
+            # get test/val splits of MMSD data
+            batched_mmsd_test = mmsd_dataset["test"].to_tf_dataset(
+                columns=["input_ids", "attention_mask", "pixel_values"],
+                label_cols="label",
+                shuffle=False,
+                batch_size=32,
+            )
+            mmsd_textlist_test = mmsd_dataset["test"]["text_list"].tolist()
+
+            # batched_mmsd_val = mmsd_dataset["validation"].to_tf_dataset(
+            #     columns=["input_ids", "attention_mask", "pixel_values"],
+            #     label_cols="label",
+            #     shuffle=False,
+            #     batch_size=32,
+            # )
+            # mmsd_textlist_val = mmsd_dataset["validation"]["text_list"].tolist()
+
             test(model, batched_mmsd_test, mmsd_textlist_test)
 
         else:
-            print("Invalid dataset. Use --dataset mmsd2.0 or --dataset muse.")
+            print("Invalid dataset. Use --dataset mmsd2.0 or --dataset muse_flickr.")
 
     else:
         print("Invalid mode. Use --mode train or --mode test.")
     
-
-    # breaking:
-    # trying to take a batch (32) of examples
-    # then, it tries to stack each dimension together (all text, all images)
-    # it breaks because the text is different shapes
-    # Group into batches of 32
-    # batch_size = 32
-    # text_list_batches = [text_list_train[i:i + batch_size] for i in range(0, len(text_list_train), batch_size)]
-
-    # for (batch, text_batch) in tqdm(zip(train_dataset, text_list_batches), desc="Training"):
-    #     clip_inputs, labels = batch
-    #     # supposedly should be able to get text_batch now?
-
-    #     # print("first clip_input_ids:", clip_inputs["input_ids"][0])
-    #     # print("first text in batch:", text_batch[0])
-
-    #     model(clip_inputs, text_batch)
-    #     break
-        
-    # Optionally save the model after every epoch
-    # model.save_pretrained("./saved_model")
-
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -149,7 +136,7 @@ def parse_args():
 
     parser.add_argument(
         "--dataset", 
-        choices=["mmsd2.0", "muse"], 
+        choices=["mmsd2.0", "muse_flickr"], 
         help="Dataset to use when testing."
     )
 

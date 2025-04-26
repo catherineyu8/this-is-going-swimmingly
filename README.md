@@ -16,6 +16,12 @@ MUSE dataset download & preprocessing
 -   This will generate a folder called "muse_processed" which contains MUSE training/validation/testing data splits
 -   Do NOT upload the muse_processed or muse folders to github! (it is in the .gitignore)
 
+FLICKR dataset download & preprocessing
+
+-   Run data/load_data_flickr.py
+-   This will generate a folder called "flickr_processed" which contains ~3000 random data points from flickr
+-   Do NOT upload this to github! (it is in the .gitignore)
+
 ## notes to run the model
 
 To train the model
@@ -26,9 +32,9 @@ To test the model on MMSD 2.0 dataset test split
 
 -   src/main.py --mode train --dataset mmsd2.0
 
-To test the model on the MUSE dataset (train split)
+To test the model on the MUSE/FLICKR custom combined dataset
 
--   src/main.py --mode train --dataset muse
+-   src/main.py --mode train --dataset muse_flickr
 
 To run a container with tensorflow in oscar:
 
