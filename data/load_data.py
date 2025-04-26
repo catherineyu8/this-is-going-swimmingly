@@ -2,7 +2,7 @@ from datasets import load_dataset, load_from_disk
 from transformers import CLIPProcessor
 import os
 
-# Load the dataset
+# load dataset
 dataset = load_dataset("coderchen01/MMSD2.0", name="mmsd-v2")
 
 # get just the first 64 examples: 2 batches
@@ -13,7 +13,7 @@ processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
 
 # preprocess each example
 def preprocess(example):
-    # Process with CLIPProcessor
+    # process with CLIPProcessor
     inputs = processor(
         text=example["text"],
         images=example["image"],
@@ -39,7 +39,6 @@ def preprocess(example):
 
 # Get the directory this script is in (i.e., the "data" folder)
 current_dir = os.path.dirname(os.path.abspath(__file__))
-# processed_data_dir = os.path.join(current_dir, "mmsd_processed")
 processed_data_dir = os.path.join(current_dir, "mmsd_processed")
 
 # preprocess small chunk (2 batches)
