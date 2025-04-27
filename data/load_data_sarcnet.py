@@ -3,11 +3,27 @@ from datasets import Dataset, DatasetDict, load_from_disk
 from transformers import CLIPProcessor
 from PIL import Image
 import os
+import gdown
+import zipfile
 # import io # not needed it seems
 
 # Settings
 SARCNET_DIR = "./data/sarcnet/"  # Change if needed
 PROCESSED_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sarcnet_processed")
+
+# Google Drive settings
+zip_file_id = '18m3KdDCXgkAlvTbjNhfftvU9LdhyDUTt'  # SarcNet file ID
+zip_path = './data/sarcnet.zip'  # Temporary zip download location
+extract_dir = './data/sarcnet/'  # Where the data will go
+
+# Download and unzip SarcNet dataset if missing
+if not os.path.exists(extract_dir):
+    os.makedirs('./data', exist_ok=True)
+    url = f'https://drive.google.com/uc?id={zip_file_id}'
+    gdown.download(url, zip_path, quiet=False)
+    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+        zip_ref.extractall('./data/')
+    print("Downloaded and extracted SarcNet dataset.")
 
 # Load SarcNet CSVs
 train_df = pd.read_csv(os.path.join(SARCNET_DIR, "train.csv"))
@@ -36,7 +52,7 @@ def preprocess_sarcnet(example):
         return_tensors="np",
         padding="max_length",
         truncation=True,
-        max_length=77,
+        max_length=77, # cut off captions after this length
     )
 
     return {
