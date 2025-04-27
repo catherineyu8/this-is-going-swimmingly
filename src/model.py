@@ -46,14 +46,21 @@ class RackleMuffin(tf.keras.Model):
         # self.resnet_linear = layers.Dense(self.image_hidden_size)
 
         # custom backbone
-        self.backbone = build_backbone(
-            lr_backbone=0,
-            masks=True,
-            dilation=False,
-            backbone="resnet50",
-            position_embedding="sine",
-            hidden_dim=self.image_hidden_size
-        )
+        # In the __init__ method of RackleMuffin
+        class Args:
+            pass
+
+        image_hidden_size = self.image_hidden_size  # Get the value from RackleMuffin first
+
+        args = Args()
+        args.lr_backbone = 0
+        args.masks = True
+        args.dilation = False
+        args.backbone = "resnet50"
+        args.position_embedding = "sine"
+        args.hidden_dim = image_hidden_size  # Use the saved value
+
+        self.backbone = build_backbone(args)
         self.backbone.trainable = False
         self.backbone_linear = layers.Dense(self.image_hidden_size)
         #custom backbone end
@@ -143,19 +150,35 @@ class RackleMuffin(tf.keras.Model):
         # resnet_img_features = self.resnet_linear(resnet_img_features) # (32, 768)
 
         # Backbone
-        transformed_images = tf.transpose(inputs["pixel_values"], perm=[0, 2, 3, 1])
-        # mask
+        # BACKBONE (replaces RESNET)
+        # Get images from inputs and prepare for backbone
+        transformed_images = tf.transpose(inputs["pixel_values"], perm=[0, 2, 3, 1])  # convert from NCHW to NHWC format
+            
+        # Create a mask (assuming all pixels are valid)
         batch_size = tf.shape(transformed_images)[0]
         img_height = tf.shape(transformed_images)[1]
         img_width = tf.shape(transformed_images)[2]
         mask = tf.ones((batch_size, img_height, img_width), dtype=tf.bool)
-
+            
+        # Create NestedTensor object
         nested_input = NestedTensor(transformed_images, mask)
-        backbone_features, pos_encoding = self.backbone(nested_input)
-        # last feature map from layers
-        last_feature = backbone_features[-1].tensors
-        backbone_img_features = tf.reduce_mean(last_feature, axis=[1, 2])  # Global avg pooling
-        backbone_img_features = self.backbone_linear(backbone_img_features)
+            
+        # Get backbone features
+        backbone_outputs = self.backbone.backbone(tensor_list=nested_input)  # Access just the backbone part
+            
+        # Get the last feature map (usually layer4)
+        last_feature_name = 'layer4'
+        if last_feature_name in backbone_outputs:
+            last_feature = backbone_outputs[last_feature_name].tensors
+            # Apply global average pooling
+            backbone_img_features = tf.reduce_mean(last_feature, axis=[1, 2])
+        else:
+            # Fallback to the first available feature
+            feature_name = list(backbone_outputs.keys())[0]
+            feature = backbone_outputs[feature_name].tensors
+            backbone_img_features = tf.reduce_mean(feature, axis=[1, 2])
+            
+        backbone_img_features = self.backbone_linear(backbone_img_features)  # (32, 768)
 
         # BERT
         bert_encoded_input = self.bert_tokenizer(text_data, padding=True, truncation=True, return_tensors="tf")

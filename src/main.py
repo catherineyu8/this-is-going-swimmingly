@@ -66,7 +66,7 @@ def main():
         "pixel_values": tf.zeros((32, 3, 224, 224), dtype=tf.float32),
     }
     dummy_text_list = ["this is a caption"] * 32
-    _ = model(dummy_inputs, dummy_text_list)
+    _ = model(dummy_inputs, text_data=dummy_text_list)
 
     # TRAIN model
     if args.mode == "train":
