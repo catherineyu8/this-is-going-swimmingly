@@ -31,19 +31,23 @@ SarcNet preprocessing
 
 To train the model
 
--   src/main.py --mode test
+-   src/main.py --mode train
 
 To test the model on MMSD 2.0 dataset test split
 
--   src/main.py --mode train --dataset mmsd2.0
+-   src/main.py --mode test --dataset mmsd2.0
 
 To test the model on the MUSE/FLICKR custom combined dataset
 
--   src/main.py --mode train --dataset muse_flickr
+-   src/main.py --mode test --dataset muse_flickr
 
 To test the model on our own data
 
--   src/main.py --mode train --dataset us
+-   src/main.py --mode test --dataset us
+
+To test the model on SarcNet data
+
+-   src/main.py --mode test --dataset sarcnet
 
 To run a container with tensorflow in oscar:
 
