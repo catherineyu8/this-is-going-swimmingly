@@ -26,12 +26,15 @@ if not os.path.exists(extract_dir):
     print("Downloaded and extracted SarcNet dataset.")
 
 # Load SarcNet CSVs
-train_df = pd.read_csv(os.path.join(SARCNET_DIR, "train.csv"))
-val_df = pd.read_csv(os.path.join(SARCNET_DIR, "val.csv"))
-test_df = pd.read_csv(os.path.join(SARCNET_DIR, "test.csv"))
+train_df = pd.read_csv(os.path.join(SARCNET_DIR, "train.csv"), encoding='latin1')
+val_df = pd.read_csv(os.path.join(SARCNET_DIR, "val.csv"), encoding='latin1')
+test_df = pd.read_csv(os.path.join(SARCNET_DIR, "test.csv"), encoding='latin1')
 
-# Make sure columns exist: ['image_path', 'text', 'image_label', 'text_label', 'multimodal_label']
-assert all(col in train_df.columns for col in ["image_path", "text", "image_label", "text_label", "multimodal_label"])
+# Make sure columns exist
+assert all(col in train_df.columns for col in ["Imagepath", "Text", "Image_label", "Text_label", "Multi_label"])
+
+# print(list(train_df.columns))
+# print(list(train_dataset.column_names))
 
 # Convert to Huggingface Dataset format
 train_dataset = Dataset.from_pandas(train_df)
@@ -43,43 +46,59 @@ processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
 
 # Preprocessing function
 def preprocess_sarcnet(example):
-    image_path = os.path.join(SARCNET_DIR, "images", example["image_path"])
-    image = Image.open(image_path).convert("RGB")
+    # image_path = os.path.join(SARCNET_DIR, "Image", example["Imagepath"])
+    # image = Image.open(image_path).convert("RGB")
+
+    image_paths = [
+        os.path.join(SARCNET_DIR, "Image", img_path) for img_path in example["Imagepath"]
+    ]
+    images = [Image.open(path).convert("RGB") for path in image_paths]
 
     inputs = processor(
-        text=example["text"],
-        images=image,
+        text=example["Text"],
+        images=images,
         return_tensors="np",
         padding="max_length",
         truncation=True,
         max_length=77, # cut off captions after this length
     )
 
+# ["Imagepath", "Text", "Image_label", "Text_label", "Multi_label"]
     return {
+        # for clip
         "input_ids": inputs["input_ids"],
         "attention_mask": inputs["attention_mask"],
         "pixel_values": inputs["pixel_values"],
-        "image_label": example["image_label"],
-        "text_label": example["text_label"],
-        "multimodal_label": example["multimodal_label"],
-        "text_list": example["text"],
-        "image_list": example["image_path"],
+        "label": example["Multi_label"],
+
+        # image-specific label
+        "image_label": example["Image_label"],
+        # test-specific label
+        "text_label": example["Text_label"],
+
+        # for bert
+        "text_list": example["Text"],
+        "image_list": example["Imagepath"],
+        "label_list": example["Multi_label"],
+        # "text_label": example["Text_label"],
+        "samples": inputs["pixel_values"]
     }
 
 # Preprocessing and saving
 def main():
     if not os.path.exists(PROCESSED_DIR):
-        processed_train = train_dataset.map(preprocess_sarcnet, num_proc=4)
-        processed_val = val_dataset.map(preprocess_sarcnet, num_proc=4)
-        processed_test = test_dataset.map(preprocess_sarcnet, num_proc=4)
+        processes = 2 # i changed this from 4 because my computer's a brick
+        processed_train = train_dataset.map(preprocess_sarcnet, batched=True, num_proc=processes)
+        processed_val = val_dataset.map(preprocess_sarcnet, batched=True, num_proc=processes)
+        processed_test = test_dataset.map(preprocess_sarcnet, batched=True, num_proc=processes)
 
         for ds in [processed_train, processed_val, processed_test]:
             ds.set_format(
                 type="numpy",
                 columns=[
                     "input_ids", "attention_mask", "pixel_values",
-                    "image_label", "text_label", "multimodal_label",
-                    "text_list", "image_list"
+                    "image_label", "text_label", "label",
+                    "text_list", "image_list", "label_list", "samples"
                 ]
             )
 

@@ -22,6 +22,11 @@ FLICKR dataset download & preprocessing
 -   This will generate a folder called "flickr_processed" which contains ~3000 random data points from flickr
 -   Do NOT upload this to github! (it is in the .gitignore)
 
+SarcNet preprocessing
+-   Run data/load_data_sarcnet.py (no need to have the data locally; it's taken from a google drive link)
+-   This will generate a folder called "sarcnet_processed" which contains SarcNet train/test/val data split
+-   That folder is also in the .gitignore
+
 ## notes to run the model
 
 To train the model
