@@ -5,3 +5,4 @@ data/flickr_processed/
 **/__pycache__/
 data/muse.zip
 saved_models/
+data/sarcnet_processed/
