@@ -22,23 +22,32 @@ FLICKR dataset download & preprocessing
 -   This will generate a folder called "flickr_processed" which contains ~3000 random data points from flickr
 -   Do NOT upload this to github! (it is in the .gitignore)
 
+SarcNet preprocessing
+-   Run data/load_data_sarcnet.py (no need to have the data locally; it's taken from a google drive link)
+-   This will generate a folder called "sarcnet_processed" which contains SarcNet train/test/val data split
+-   That folder is also in the .gitignore
+
 ## notes to run the model
 
 To train the model
 
--   src/main.py --mode test
+-   src/main.py --mode train
 
 To test the model on MMSD 2.0 dataset test split
 
--   src/main.py --mode train --dataset mmsd2.0
+-   src/main.py --mode test --dataset mmsd2.0
 
 To test the model on the MUSE/FLICKR custom combined dataset
 
--   src/main.py --mode train --dataset muse_flickr
+-   src/main.py --mode test --dataset muse_flickr
 
 To test the model on our own data
 
--   src/main.py --mode train --dataset us
+-   src/main.py --mode test --dataset us
+
+To test the model on SarcNet data
+
+-   src/main.py --mode test --dataset sarcnet
 
 To run a container with tensorflow in oscar:
 

@@ -130,7 +130,21 @@ def main():
             textlist = our_dataset["text_list"].tolist()
 
             test(model, batched_data, textlist)
+        elif args.dataset == "sarcnet":
+            sarcnet_dataset = load_from_disk("data/sarcnet_processed")
 
+            # remove unneeded columns -- any other unneeded columns?
+            sarcnet_dataset = sarcnet_dataset.remove_columns(["samples", "label_list", "image_list", "text_label", "image_label"])
+
+            batched_sarcnet_test = sarcnet_dataset["test"].to_tf_dataset(
+                columns=["input_ids", "attention_mask", "pixel_values"],
+                label_cols="label",
+                shuffle=False,
+                batch_size = 32,
+            )
+            sarcnet_textlist_test = sarcnet_dataset["test"]["text_list"].tolist()
+
+            test(model, batched_sarcnet_test, sarcnet_textlist_test)
 
         else:
             print("Invalid dataset. Use --dataset mmsd2.0 or --dataset muse_flickr or --dataset us.")
@@ -151,7 +165,7 @@ def parse_args():
 
     parser.add_argument(
         "--dataset", 
-        choices=["mmsd2.0", "muse_flickr", "us"], 
+        choices=["mmsd2.0", "muse_flickr", "us", "sarcnet"],
         help="Dataset to use when testing."
     )
 
