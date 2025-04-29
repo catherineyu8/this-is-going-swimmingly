@@ -128,4 +128,3 @@ if __name__ == "__main__":
     pos_learned = learned_embed(dummy_tensor)
     print(f"Output shape (learned): {pos_learned.shape}")  # Expect [2, 10, 12, 128]
     print(f"Output sample (learned) at [0,0,0]: {pos_learned[0,0,0].numpy()[:8]}")
-

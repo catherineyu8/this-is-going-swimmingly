@@ -1,6 +1,7 @@
 import tensorflow as tf
 import tensorflow.keras.layers as layers
 from transformers import TFCLIPModel, BertConfig, BertTokenizer, TFBertModel
+from backbone import build_backbone, NestedTensor
 
 class RackleMuffin(tf.keras.Model):
 
@@ -38,11 +39,30 @@ class RackleMuffin(tf.keras.Model):
         self.image_linear = layers.Dense(self.image_hidden_size)
         
         # RESNET for image processing
-        # TODO: the paper joins resnet with position encoding
-        # TODO: check params for resnet/use their own backbone. include_top=False removes final classificaiton layer
+        # include_top=False removes final classificaiton layer
         self.resnet_backbone = tf.keras.applications.ResNet50(weights='imagenet', include_top=False, pooling='avg')
         self.resnet_backbone.trainable = False # freeze resnet params
         self.resnet_linear = layers.Dense(self.image_hidden_size)
+
+        # start custom backbone
+        # In the __init__ method of RackleMuffin
+        # class Args:
+        #     pass
+
+        # image_hidden_size = self.image_hidden_size  # Get the value from RackleMuffin first
+
+        # args = Args()
+        # args.lr_backbone = 0
+        # args.masks = True
+        # args.dilation = False
+        # args.backbone = "resnet50"
+        # args.position_embedding = "sine"
+        # args.hidden_dim = image_hidden_size  # Use the saved value
+
+        # self.backbone = build_backbone(args)
+        # self.backbone.trainable = False
+        # self.backbone_linear = layers.Dense(self.image_hidden_size)
+        # end custom backbone
 
         # BERT model for text processing
         # Load tokenizer (same as in PyTorch)
@@ -128,6 +148,22 @@ class RackleMuffin(tf.keras.Model):
         transformed_images = tf.keras.applications.resnet50.preprocess_input(transformed_images) # TODO: if we use their backbone def, maybe don't do this, but this is what resnet expects/needs
         resnet_img_features = self.resnet_backbone(transformed_images) # (32, 2048)
         resnet_img_features = self.resnet_linear(resnet_img_features) # (32, 768)
+
+        # start custom backbone - EITHER USE THIS OR RESNET
+        # transformed_images = tf.transpose(inputs["pixel_values"], perm=[0, 2, 3, 1])
+        # # mask
+        # batch_size = tf.shape(transformed_images)[0]
+        # img_height = tf.shape(transformed_images)[1]
+        # img_width = tf.shape(transformed_images)[2]
+        # mask = tf.ones((batch_size, img_height, img_width), dtype=tf.bool)
+
+        # nested_input = NestedTensor(transformed_images, mask)
+        # backbone_features, pos_encoding = self.backbone(nested_input)
+        # # last feature map from layers
+        # last_feature = backbone_features[-1].tensors
+        # backbone_img_features = tf.reduce_mean(last_feature, axis=[1, 2])  # Global avg pooling
+        # backbone_img_features = self.backbone_linear(backbone_img_features)
+        # end custom backbone
 
         # BERT
         bert_encoded_input = self.bert_tokenizer(text_data, padding=True, truncation=True, return_tensors="tf")
